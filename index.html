@@ -1,510 +1,513 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FamilyWealth Platinum</title>
+    <title>FamilyWealth | Cyber OS</title>
+    <meta name="theme-color" content="#0F0F11">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#000000">
-
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bg: '#09090B', // Almost black
+                        surface: '#18181B', // Zinc 900
+                        surfaceHighlight: '#27272A', // Zinc 800
+                        primary: '#7C3AED', // Violet 600
+                        accent: '#8B5CF6', // Violet 500
+                        neon: '#A78BFA', // Violet 400
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    boxShadow: {
+                        'neon': '0 0 20px -5px rgba(124, 58, 237, 0.3)',
+                        'glow': '0 0 40px -10px rgba(124, 58, 237, 0.5)',
+                        'inner-light': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.1)'
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
 
     <style>
-        body { background-color: #000; color: #f5f5f7; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, Helvetica, sans-serif; -webkit-tap-highlight-color: transparent; }
-        
-        /* UI Components Estilo Premium */
-        .ios-card { background: #1C1C1E; border-radius: 22px; padding: 20px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-        .ios-input { background: #2C2C2E; border: 1px solid #3A3A3C; border-radius: 12px; padding: 12px; color: white; width: 100%; outline: none; font-size: 15px; transition: all 0.2s; }
-        .ios-input:focus { border-color: #0A84FF; background: #323234; }
-        .ios-btn { border-radius: 14px; font-weight: 600; padding: 16px; transition: transform 0.1s, opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .ios-btn:active { transform: scale(0.97); opacity: 0.8; }
-        
-        /* Efecto Plateado Premium para el Saldo */
-        .silver-text {
-            background: linear-gradient(180deg, #FFFFFF 0%, #A0A0A0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0px 2px 10px rgba(255,255,255,0.15);
+        /* ESTILOS GLOBALES Y ATMOSFERA */
+        body {
+            background-color: #050505;
+            color: #E4E4E7;
+            overflow-x: hidden;
         }
 
-        /* Utility */
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .emoji-btn { transition: all 0.2s; filter: grayscale(1); opacity: 0.5; transform: scale(0.9); }
-        .emoji-btn.active { filter: grayscale(0); opacity: 1; transform: scale(1.1); background: rgba(255,255,255,0.1); border-radius: 12px; }
-        
-        /* Animaciones */
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .animate-enter { animation: slideUp 0.4s ease-out forwards; }
+        /* LUZ CENITAL (AMBIENT LIGHT) */
+        .ambient-light {
+            position: fixed;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120vw;
+            height: 60vh;
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, rgba(9, 9, 11, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
 
-        /* Estilo del Gráfico Donut */
-        .donut-chart {
-            width: 160px; height: 160px; border-radius: 50%;
-            position: relative; margin: 0 auto;
-            transition: background 0.5s ease;
+        /* GLASSMORPHISM CARDS */
+        .cyber-card {
+            background: rgba(24, 24, 27, 0.65);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            transition: transform 0.2s ease, border-color 0.2s ease;
         }
-        .donut-hole {
-            width: 110px; height: 110px; background: #1C1C1E; border-radius: 50%;
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        
+        .cyber-card:hover {
+            border-color: rgba(139, 92, 246, 0.3);
         }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #09090B; }
+        ::-webkit-scrollbar-thumb { background: #3F3F46; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #7C3AED; }
+
+        /* INPUTS */
+        .cyber-input {
+            background: #0f0f12;
+            border: 1px solid #27272A;
+            color: white;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+        .cyber-input:focus {
+            outline: none;
+            border-color: #7C3AED;
+            box-shadow: 0 0 15px -3px rgba(124, 58, 237, 0.4);
+        }
+
+        /* ANIMACIONES DE ENTRADA */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-in { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     </style>
 </head>
 <body>
+    
+    <div class="ambient-light"></div>
     <div id="root"></div>
 
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(() => console.log('SW Registered'));
+        }
+    </script>
+
     <script type="text/babel">
-        const { useState, useEffect, useMemo, createContext, useContext, useRef } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
+        const { LineChart, PieChart, TrendingUp, Wallet, Landmark, Car, Home, Zap, ArrowRightLeft, Download, Plus, Search, Menu, X, Bell } = lucide;
 
-        // --- CONSTANTES (Con Hex para el gráfico) ---
-        const CATS = [
-            { id: 'home', icon: '🏠', label: 'Casa', color: 'text-blue-400', hex: '#60A5FA' },
-            { id: 'food', icon: '🍔', label: 'Comida', color: 'text-orange-400', hex: '#FB923C' },
-            { id: 'transport', icon: '🚗', label: 'Auto', color: 'text-red-400', hex: '#F87171' },
-            { id: 'shop', icon: '🛍️', label: 'Compras', color: 'text-pink-400', hex: '#F472B6' },
-            { id: 'fun', icon: '🎉', label: 'Ocio', color: 'text-purple-400', hex: '#C084FC' },
-            { id: 'health', icon: '💊', label: 'Salud', color: 'text-green-400', hex: '#4ADE80' },
-            { id: 'bills', icon: '📄', label: 'Factura', color: 'text-yellow-400', hex: '#FACC15' },
-            { id: 'misc', icon: '📦', label: 'Otros', color: 'text-gray-400', hex: '#9CA3AF' }
-        ];
-
-        const Icon = ({ name, size = 18, className="" }) => {
-            useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, [name]);
-            return <i data-lucide={name} width={size} height={size} className={className}></i>;
+        // --- COMPONENTES UI REUTILIZABLES ---
+        
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const LucideIcon = window.lucide[name];
+            return LucideIcon ? <LucideIcon size={size} className={className} /> : null;
         };
 
-        // --- CONTEXTO ---
-        const AppContext = createContext();
+        const Card = ({ children, className = "", delay = 0 }) => (
+            <div className={`cyber-card p-6 ${className} animate-in`} style={{ animationDelay: `${delay}ms` }}>
+                {children}
+            </div>
+        );
 
-        const AppProvider = ({ children }) => {
-            const [user, setUser] = useState(null);
-            const [data, setData] = useState({ txs: [], subs: [], goals: [] });
+        const Button = ({ children, onClick, variant = 'primary', className = "" }) => {
+            const baseStyle = "px-5 py-3 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 active:scale-95";
+            const variants = {
+                primary: "bg-gradient-to-r from-violet-600 to-indigo-600 hover:to-indigo-500 text-white shadow-neon border border-transparent",
+                secondary: "bg-surfaceHighlight hover:bg-zinc-700 text-zinc-300 border border-white/5",
+                ghost: "bg-transparent hover:bg-white/5 text-zinc-400 hover:text-white"
+            };
+            return <button onClick={onClick} className={`${baseStyle} ${variants[variant]} ${className}`}>{children}</button>;
+        };
 
-            const login = (password) => {
-                try {
-                    const encrypted = localStorage.getItem('fw_platinum_db');
-                    if (!encrypted) {
-                        const initial = { txs: [], subs: [], goals: [] };
-                        setUser({ key: password }); setData(initial); save(initial, password);
-                        return true;
+        const Badge = ({ children, color = "violet" }) => (
+            <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-${color}-500/10 text-${color}-400 border border-${color}-500/20`}>
+                {children}
+            </span>
+        );
+
+        // --- LÓGICA DE NEGOCIO (CUSTOM HOOK) ---
+
+        const useFinanceSystem = () => {
+            // Estado inicial simulando base de datos
+            const [assets, setAssets] = useState([
+                { id: 1, name: "Cuenta Principal", type: "cash", amount: 12450.00, icon: "Wallet" },
+                { id: 2, name: "Bitcoin Portfolio", type: "crypto", amount: 35000.00, icon: "Bitcoin" },
+                { id: 3, name: "Apartamento Playa", type: "real_estate", amount: 180000.00, icon: "Home" },
+                { id: 4, name: "SP500 ETF", type: "invest", amount: 4200.50, icon: "TrendingUp" }
+            ]);
+
+            const [transactions, setTransactions] = useState([
+                { id: 1, desc: "Sueldo Mensual", amount: 3200, type: "in", date: "2023-10-01", category: "Nomina" },
+                { id: 2, desc: "Compra Semanal", amount: 150, type: "out", date: "2023-10-03", category: "Comida" },
+                { id: 3, desc: "Gasolina", amount: 60, type: "out", date: "2023-10-05", category: "Transporte" },
+                { id: 4, desc: "Restaurante", amount: 85, type: "out", date: "2023-10-06", category: "Ocio" },
+            ]);
+
+            const [goals, setGoals] = useState([
+                { id: 1, name: "Tesla Model 3", target: 45000, current: 12000, color: "from-blue-500 to-cyan-500" },
+                { id: 2, name: "Viaje a Japón", target: 5000, current: 1500, color: "from-pink-500 to-rose-500" }
+            ]);
+
+            const netWorth = assets.reduce((acc, item) => acc + item.amount, 0);
+            
+            const addTransaction = (tx) => setTransactions([tx, ...transactions]);
+            
+            // Función compleja de amortización
+            const calculateMortgage = (principal, annualRate, years) => {
+                const p = parseFloat(principal);
+                const r = parseFloat(annualRate) / 100 / 12;
+                const n = parseFloat(years) * 12;
+                
+                if (r === 0) return p / n;
+
+                const monthlyPayment = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+                
+                // Generar tabla de amortización
+                let balance = p;
+                const schedule = [];
+                for (let i = 1; i <= n; i++) {
+                    const interest = balance * r;
+                    const capital = monthlyPayment - interest;
+                    balance -= capital;
+                    if(i % 12 === 0 || i === 1) { // Guardar solo puntos clave para el gráfico para no saturar
+                        schedule.push({ month: i, balance: Math.max(0, balance), interest, capital });
                     }
-                    const bytes = CryptoJS.AES.decrypt(encrypted, password);
-                    const decrypted = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-                    
-                    if(!decrypted.subs) decrypted.subs = [];
-                    if(!decrypted.goals) decrypted.goals = [];
-                    
-                    setUser({ key: password }); setData(decrypted);
-                    return true;
-                } catch (e) { return false; }
+                }
+                
+                return { monthly: monthlyPayment, total: monthlyPayment * n, schedule };
             };
 
-            const save = (newData, key = user?.key) => {
-                if(!key) return;
-                const encrypted = CryptoJS.AES.encrypt(JSON.stringify(newData), key).toString();
-                localStorage.setItem('fw_platinum_db', encrypted);
-            };
-
-            const addItem = (type, item) => {
-                const updated = { ...data, [type]: [{ ...item, id: Date.now() }, ...data[type]] };
-                setData(updated); save(updated);
-            };
-            const delItem = (type, id) => {
-                const updated = { ...data, [type]: data[type].filter(i => i.id !== id) };
-                setData(updated); save(updated);
-            };
-
-            const exportData = () => {
-                const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = `FW_Backup_${new Date().toISOString().slice(0,10)}.json`;
-                a.click();
-            };
-
-            const importData = (file) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const json = JSON.parse(e.target.result);
-                        if(json.txs) {
-                            setData(json); save(json); alert("✅ Importado con éxito");
-                        } else { alert("⚠️ Archivo no válido"); }
-                    } catch (err) { alert("❌ Error de lectura"); }
-                };
-                reader.readAsText(file);
-            };
-
-            return (
-                <AppContext.Provider value={{ user, login, data, addItem, delItem, exportData, importData }}>
-                    {children}
-                </AppContext.Provider>
-            );
+            return { assets, transactions, goals, netWorth, addTransaction, calculateMortgage };
         };
 
-        // --- COMPONENTE: GRÁFICO (NUEVO) ---
-        const ExpenseChart = () => {
-            const { data } = useContext(AppContext);
-            
-            // 1. Filtrar gastos
-            const expenses = data.txs.filter(t => t.type === 'out');
-            const totalExpense = expenses.reduce((acc, t) => acc + t.amount, 0);
+        // --- SUB-PANTALLAS ---
 
-            // 2. Si no hay gastos, mostrar placeholder
-            if (totalExpense === 0) return null;
+        const Overview = ({ finance }) => {
+            const { netWorth, assets, goals, transactions } = finance;
 
-            // 3. Agrupar por categoría
-            const grouped = {};
-            expenses.forEach(t => {
-                if(!grouped[t.catId]) grouped[t.catId] = 0;
-                grouped[t.catId] += t.amount;
-            });
-
-            // 4. Crear segmentos para el gradiente cónico
-            let gradientString = "";
-            let currentPercent = 0;
-            const sortedCats = Object.keys(grouped).sort((a,b) => grouped[b] - grouped[a]); // Ordenar mayor a menor
-            
-            // Datos para la leyenda
-            const legendData = [];
-
-            sortedCats.forEach((catId, index) => {
-                const amount = grouped[catId];
-                const percent = (amount / totalExpense) * 100;
-                const catInfo = CATS.find(c => c.id === catId) || CATS[7];
-                const endPercent = currentPercent + percent;
-                
-                // Construir string CSS: #color start% end%,
-                gradientString += `${catInfo.hex} ${currentPercent}% ${endPercent}%, `;
-                
-                currentPercent += percent;
-                legendData.push({ ...catInfo, amount, percent });
-            });
-
-            // Quitar última coma y espacio
-            gradientString = gradientString.slice(0, -2);
+            // Datos para el gráfico de barras (simulado con DIVs para evitar dependencias pesadas pero con estilo)
+            const chartData = [40, 65, 45, 90, 75, 55, 80];
+            const maxVal = Math.max(...chartData);
 
             return (
-                <div className="ios-card bg-gray-900 border border-gray-800 animate-enter">
-                    <h3 className="text-xs uppercase font-bold text-gray-500 mb-6 flex items-center gap-2">
-                        <Icon name="pie-chart" size={14}/> Distribución de Gastos
-                    </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-24">
                     
-                    <div className="flex flex-col items-center">
-                        {/* El Donut CSS */}
-                        <div className="donut-chart" style={{ background: `conic-gradient(${gradientString})` }}>
-                            <div className="donut-hole">
-                                <span className="text-[10px] text-gray-400 uppercase">Total</span>
-                                <span className="text-xl font-bold text-white">{totalExpense.toFixed(0)}€</span>
+                    {/* TOTAL NET WORTH (Large Card) */}
+                    <Card className="col-span-1 md:col-span-2 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <Icon name="Activity" size={100} />
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-zinc-400 text-sm font-medium uppercase tracking-wider mb-1">Patrimonio Neto Total</h3>
+                            <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 tracking-tighter">
+                                {netWorth.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                            </h1>
+                            <div className="flex gap-4">
+                                <Badge color="green">+4.2% este mes</Badge>
+                                <span className="text-xs text-zinc-500 flex items-center gap-1">Actualizado ahora <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span></span>
                             </div>
                         </div>
-
-                        {/* Leyenda */}
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-6 w-full px-2">
-                            {legendData.map(l => (
-                                <div key={l.id} className="flex justify-between items-center text-xs">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full" style={{background: l.hex}}></div>
-                                        <span className="text-gray-300">{l.label}</span>
-                                    </div>
-                                    <span className="font-mono text-gray-500">{Math.round(l.percent)}%</span>
+                        
+                        {/* CHART VISUALIZER */}
+                        <div className="mt-8 flex items-end justify-between h-32 gap-2">
+                            {chartData.map((val, i) => (
+                                <div key={i} className="w-full flex flex-col justify-end h-full group/bar cursor-pointer">
+                                    <div 
+                                        style={{ height: `${(val / maxVal) * 100}%` }} 
+                                        className={`w-full rounded-t-sm transition-all duration-500 ${i === 3 ? 'bg-gradient-to-t from-violet-600 to-indigo-400 shadow-[0_0_20px_rgba(139,92,246,0.5)]' : 'bg-white/10 hover:bg-white/20'}`}
+                                    ></div>
+                                    <span className="text-[10px] text-zinc-600 text-center mt-2 font-mono">Día {i+1}</span>
                                 </div>
                             ))}
                         </div>
-                    </div>
-                </div>
-            );
-        };
+                    </Card>
 
-        // --- COMPONENTE: AHORRO ---
-        const SavingsGoals = () => {
-            const { data, addItem, delItem } = useContext(AppContext);
-            const [form, setForm] = useState({ name: '', target: '', current: '' });
-            const [isOpen, setIsOpen] = useState(false);
-
-            const handleAdd = () => {
-                if(!form.name || !form.target) return;
-                addItem('goals', { name: form.name, target: parseFloat(form.target), current: parseFloat(form.current) || 0 });
-                setForm({name:'', target:'', current:''}); setIsOpen(false);
-            };
-
-            return (
-                <div className="ios-card bg-gray-900 border border-yellow-500/30">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-yellow-500 font-bold flex items-center gap-2"><Icon name="piggy-bank" size={16}/> Metas</h3>
-                        <button onClick={()=>setIsOpen(!isOpen)} className="text-yellow-500 bg-yellow-500/10 p-2 rounded-lg text-[10px] font-bold">{isOpen ? 'Cerrar' : '+ Crear'}</button>
-                    </div>
-                    {isOpen && (
-                        <div className="bg-black/40 p-3 rounded-xl mb-4 animate-enter border border-white/10">
-                            <input placeholder="Nombre (ej: Viaje)" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="ios-input text-xs mb-2"/>
-                            <div className="flex gap-2">
-                                <input type="number" placeholder="Objetivo €" value={form.target} onChange={e=>setForm({...form, target:e.target.value})} className="ios-input text-xs"/>
-                                <input type="number" placeholder="Actual €" value={form.current} onChange={e=>setForm({...form, current:e.target.value})} className="ios-input text-xs"/>
-                            </div>
-                            <button onClick={handleAdd} className="w-full mt-2 bg-yellow-600 text-black font-bold text-xs py-2 rounded-lg">Guardar</button>
+                    {/* ASSETS BREAKDOWN */}
+                    <Card className="space-y-4">
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-bold text-white flex items-center gap-2"><Icon name="PieChart" size={18}/> Activos</h3>
+                            <button className="text-violet-400 hover:text-white transition-colors"><Icon name="Plus" size={18}/></button>
                         </div>
-                    )}
-                    <div className="space-y-4">
-                        {data.goals.map(g => (
-                            <div key={g.id} className="group">
-                                <div className="flex justify-between text-xs mb-1 text-gray-300">
-                                    <span>{g.name}</span>
-                                    <div className="flex gap-2">
-                                        <span className="font-bold text-white">{g.current} / {g.target}€</span>
-                                        <button onClick={()=>delItem('goals', g.id)} className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="x" size={12}/></button>
-                                    </div>
-                                </div>
-                                <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                                    <div style={{width: `${Math.min(100, (g.current/g.target)*100)}%`}} className="bg-gradient-to-r from-yellow-600 to-yellow-400 h-full rounded-full"></div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
-
-        // --- COMPONENTE: SUBSCRIPCIONES ---
-        const SubscriptionManager = () => {
-            const { data, addItem, delItem } = useContext(AppContext);
-            const [form, setForm] = useState({ name: '', amount: '' });
-            const [isOpen, setIsOpen] = useState(false);
-            const totalMonthly = data.subs.reduce((acc, s) => acc + s.amount, 0);
-
-            const handleAdd = () => {
-                if(!form.name || !form.amount) return;
-                addItem('subs', { name: form.name, amount: parseFloat(form.amount) });
-                setForm({name:'', amount:''}); setIsOpen(false);
-            };
-
-            return (
-                <div className="ios-card bg-gray-900 border border-purple-500/20">
-                    <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-purple-400 font-bold flex items-center gap-2"><Icon name="zap" size={16}/> Fijos</h3>
-                        <div className="text-white font-bold">{totalMonthly.toFixed(2)}€/mes</div>
-                    </div>
-                    {!isOpen ? (
-                        <button onClick={()=>setIsOpen(true)} className="w-full py-2 bg-white/5 rounded-xl text-xs text-gray-400 hover:text-white mb-4">+ Añadir</button>
-                    ) : (
-                        <div className="flex gap-2 mb-4 animate-enter">
-                            <input placeholder="Nombre" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="ios-input text-xs py-2"/>
-                            <input type="number" placeholder="€" value={form.amount} onChange={e=>setForm({...form, amount:e.target.value})} className="ios-input w-20 text-xs py-2 text-center"/>
-                            <button onClick={handleAdd} className="bg-purple-600 px-3 rounded-xl text-white"><Icon name="check" size={16}/></button>
-                        </div>
-                    )}
-                    <div className="space-y-2">
-                        {data.subs.map(s => (
-                            <div key={s.id} className="flex justify-between items-center bg-black/20 p-2 rounded-lg group">
-                                <span className="text-sm text-gray-300">{s.name}</span>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm font-mono font-bold">{s.amount}€</span>
-                                    <button onClick={()=>delItem('subs', s.id)} className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="trash" size={12}/></button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
-
-        // --- COMPONENTE: SIMULADOR ---
-        const SmartSimulator = () => {
-            const [amount, setAmount] = useState(15000);
-            const [months, setMonths] = useState(48);
-            const [rate, setRate] = useState(6.5);
-            const [type, setType] = useState('auto');
-
-            const presets = {
-                home: { r: 3.5, label: 'Hipoteca', icon: 'home' },
-                auto: { r: 6.5, label: 'Coche', icon: 'car' },
-                card: { r: 12.0, label: 'Personal', icon: 'credit-card' }
-            };
-
-            const setPreset = (k) => {
-                setType(k); setRate(presets[k].r);
-                if(k === 'home') setMonths(300); if(k === 'auto') setMonths(48); if(k === 'card') setMonths(24);
-            };
-
-            const r = (rate / 100) / 12;
-            const cuota = amount * ((r * Math.pow(1+r, months)) / (Math.pow(1+r, months) - 1));
-            const totalPagado = cuota * months;
-            const totalInteres = totalPagado - amount;
-            const porcInteres = (totalInteres / totalPagado) * 100;
-
-            return (
-                <div className="ios-card bg-gray-900 border border-orange-500/30">
-                    <h3 className="text-orange-500 font-bold mb-4 flex gap-2 items-center"><Icon name="calculator" size={16}/> Simulador</h3>
-                    <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
-                        {Object.entries(presets).map(([k, v]) => (
-                            <button key={k} onClick={() => setPreset(k)} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all flex flex-col items-center gap-1 ${type === k ? 'bg-orange-500 text-white' : 'text-gray-500 hover:bg-white/5'}`}>
-                                <Icon name={v.icon} size={14} /> {v.label}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div>
-                            <label className="text-[9px] text-gray-400 uppercase font-bold">Solicito (€)</label>
-                            <input type="number" value={amount} onChange={e=>setAmount(Number(e.target.value))} className="ios-input text-center font-bold text-sm py-2"/>
-                        </div>
-                        <div>
-                            <label className="text-[9px] text-gray-400 uppercase font-bold">Meses</label>
-                            <input type="number" value={months} onChange={e=>setMonths(Number(e.target.value))} className="ios-input text-center font-bold text-sm py-2"/>
-                        </div>
-                    </div>
-                    <div className="mb-4">
-                        <label className="text-[9px] text-gray-400 uppercase font-bold">Interés (%)</label>
-                        <div className="flex items-center gap-2">
-                             <input type="number" value={rate} onChange={e=>{setRate(Number(e.target.value)); setType('custom');}} className="ios-input text-center font-bold text-sm py-2 text-orange-400 border-orange-500/20"/>
-                             <span className="text-xs text-gray-500">{type === 'custom' ? 'Manual' : 'Auto'}</span>
-                        </div>
-                    </div>
-                    <div className="bg-black/40 p-3 rounded-xl text-center mb-2 border border-white/5">
-                        <p className="text-[10px] text-gray-400 mb-1">Cuota Mensual</p>
-                        <p className="text-2xl font-bold text-white">{cuota.toFixed(2)}€</p>
-                    </div>
-                    <div className="mt-3">
-                        <div className="h-2 bg-gray-800 rounded-full overflow-hidden flex">
-                            <div style={{width: `${100-porcInteres}%`}} className="bg-green-500 h-full"></div>
-                            <div style={{width: `${porcInteres}%`}} className="bg-red-500 h-full"></div>
-                        </div>
-                        <div className="flex justify-between text-[9px] mt-1 text-gray-500">
-                            <span>Capital</span>
-                            <span>Intereses ({totalInteres.toFixed(0)}€)</span>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // --- DASHBOARD ---
-        const Dashboard = () => {
-            const { data, addItem, delItem, exportData, importData } = useContext(AppContext);
-            const [form, setForm] = useState({ desc: '', amount: '', type: 'out', catId: 'food' });
-            const fileRef = useRef(null);
-
-            const income = data.txs.filter(t => t.type === 'in').reduce((acc, t) => acc + t.amount, 0);
-            const expense = data.txs.filter(t => t.type === 'out').reduce((acc, t) => acc + t.amount, 0);
-            const balance = income - expense;
-
-            const submit = () => {
-                if(!form.desc || !form.amount) return;
-                const catInfo = CATS.find(c => c.id === form.catId) || CATS[7];
-                addItem('txs', { ...form, amount: parseFloat(form.amount), catId: form.catId, catIcon: catInfo.icon, catLabel: catInfo.label });
-                setForm({ ...form, desc: '', amount: '' });
-            };
-
-            return (
-                <div className="pb-32 max-w-xl mx-auto min-h-screen">
-                    <nav className="p-6 flex justify-between items-center sticky top-0 bg-black/80 backdrop-blur-md z-20 border-b border-white/5">
-                        <span className="text-lg font-bold">FamilyWealth</span>
-                        <div className="flex gap-2">
-                            <button onClick={()=>fileRef.current.click()} className="flex items-center gap-1 bg-gray-800 px-3 py-2 rounded-full text-[10px] font-bold text-blue-400 hover:bg-gray-700 transition">
-                                <Icon name="upload-cloud" size={14}/> <span>Importar</span>
-                            </button>
-                            <button onClick={exportData} className="flex items-center gap-1 bg-gray-800 px-3 py-2 rounded-full text-[10px] font-bold text-green-400 hover:bg-gray-700 transition">
-                                <Icon name="download-cloud" size={14}/> <span>Exportar</span>
-                            </button>
-                            <input type="file" ref={fileRef} onChange={e => e.target.files[0] && importData(e.target.files[0])} className="hidden" accept=".json"/>
-                        </div>
-                    </nav>
-
-                    <div className="px-6 py-8 text-center">
-                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Patrimonio Neto</p>
-                        <h1 className="text-6xl font-bold silver-text mb-2 tracking-tight">{balance.toFixed(2)}€</h1>
-                        <div className="flex justify-center gap-4 text-xs font-mono">
-                            <span className="text-green-500 bg-green-900/20 px-2 py-1 rounded">+{income}</span>
-                            <span className="text-red-500 bg-red-900/20 px-2 py-1 rounded">-{expense}</span>
-                        </div>
-                    </div>
-
-                    <div className="px-4 space-y-4">
-                        <div className="ios-card bg-gray-900/80 backdrop-blur border-blue-500/20 border">
-                            <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
-                                <button onClick={() => setForm({...form, type: 'in'})} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${form.type === 'in' ? 'bg-green-600 text-white' : 'text-gray-500'}`}>INGRESO</button>
-                                <button onClick={() => setForm({...form, type: 'out'})} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${form.type === 'out' ? 'bg-red-600 text-white' : 'text-gray-500'}`}>GASTO</button>
-                            </div>
-                            <div className="flex gap-3 mb-4">
-                                <input placeholder="Concepto" value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} className="ios-input flex-1" />
-                                <input type="number" placeholder="0.00" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className="ios-input w-24 text-center" />
-                            </div>
-                            {form.type === 'out' && (
-                                <div className="mb-4">
-                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">Categoría</p>
-                                    <div className="flex justify-between overflow-x-auto hide-scroll pb-2 gap-2">
-                                        {CATS.map(c => (
-                                            <button key={c.id} onClick={() => setForm({...form, catId: c.id})} className={`emoji-btn flex flex-col items-center gap-1 p-2 min-w-[50px] ${form.catId === c.id ? 'active' : ''}`}>
-                                                <span className="text-2xl">{c.icon}</span>
-                                                <span className="text-[9px] text-gray-400">{c.label}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            <button onClick={submit} className="ios-btn w-full bg-white text-black hover:bg-gray-200">Registrar</button>
-                        </div>
-
-                        {/* MÓDULOS */}
-                        <ExpenseChart /> {/* GRÁFICO AQUÍ */}
-                        <SavingsGoals />
-                        <SubscriptionManager />
-                        <SmartSimulator />
-
-                        <div className="ios-card">
-                            <h3 className="text-xs uppercase font-bold text-gray-500 mb-4">Actividad</h3>
-                            <div className="space-y-4">
-                                {data.txs.slice(0, 8).map(t => (
-                                    <div key={t.id} className="flex justify-between items-center group animate-enter">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-xl">
-                                                {t.type === 'in' ? '💰' : (t.catIcon || '💸')}
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-sm text-gray-200">{t.desc}</p>
-                                                <p className="text-[10px] text-gray-500 uppercase">{t.catLabel || 'General'}</p>
-                                            </div>
+                        <div className="space-y-3">
+                            {assets.map(asset => (
+                                <div key={asset.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-zinc-900 rounded-lg text-violet-400">
+                                            <Icon name={asset.icon} size={18} />
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <span className={`font-mono font-bold ${t.type === 'in' ? 'text-green-400' : 'text-white'}`}>
-                                                {t.type === 'in' ? '+' : '-'}{t.amount.toFixed(2)}€
-                                            </span>
-                                            <button onClick={() => delItem('txs', t.id)} className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="x" size={14}/></button>
+                                        <div>
+                                            <p className="text-sm font-medium text-white">{asset.name}</p>
+                                            <p className="text-[10px] text-zinc-500 uppercase">{asset.type}</p>
                                         </div>
                                     </div>
-                                ))}
-                                {data.txs.length === 0 && <p className="text-center text-gray-600 text-sm py-4">Todo limpio ✨</p>}
-                            </div>
+                                    <span className="font-mono text-sm font-bold">{asset.amount.toLocaleString()}€</span>
+                                </div>
+                            ))}
                         </div>
+                    </Card>
 
-                    </div>
+                    {/* GOALS */}
+                    <Card className="md:col-span-1">
+                        <h3 className="font-bold text-white mb-4 flex items-center gap-2"><Icon name="Target" size={18}/> Metas de Ahorro</h3>
+                        <div className="space-y-6">
+                            {goals.map(goal => {
+                                const percent = (goal.current / goal.target) * 100;
+                                return (
+                                    <div key={goal.id}>
+                                        <div className="flex justify-between text-xs mb-2">
+                                            <span className="text-zinc-300">{goal.name}</span>
+                                            <span className="text-white font-mono">{goal.current} / {goal.target}€</span>
+                                        </div>
+                                        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                            <div style={{ width: `${percent}%` }} className={`h-full rounded-full bg-gradient-to-r ${goal.color} shadow-lg`}></div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </Card>
+
+                    {/* RECENT TRANSACTIONS */}
+                    <Card className="md:col-span-2">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="font-bold text-white">Transacciones Recientes</h3>
+                            <Button variant="ghost" className="py-1 px-3 text-xs">Ver todo</Button>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="text-zinc-500 border-b border-white/5">
+                                    <tr>
+                                        <th className="pb-3 font-normal">Concepto</th>
+                                        <th className="pb-3 font-normal">Categoría</th>
+                                        <th className="pb-3 font-normal">Fecha</th>
+                                        <th className="pb-3 font-normal text-right">Monto</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {transactions.map(t => (
+                                        <tr key={t.id} className="group hover:bg-white/5 transition-colors">
+                                            <td className="py-4 font-medium text-white pl-2">{t.desc}</td>
+                                            <td className="py-4 text-zinc-400">
+                                                <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-xs">{t.category}</span>
+                                            </td>
+                                            <td className="py-4 text-zinc-500 font-mono text-xs">{t.date}</td>
+                                            <td className={`py-4 text-right font-mono font-bold pr-2 ${t.type === 'in' ? 'text-green-400' : 'text-white'}`}>
+                                                {t.type === 'in' ? '+' : '-'}{t.amount}€
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card>
                 </div>
             );
         };
 
-        const Login = () => {
-            const { login } = useContext(AppContext);
-            const [pass, setPass] = useState('');
-            const [err, setErr] = useState('');
+        const Simulator = ({ finance }) => {
+            const [amount, setAmount] = useState(250000);
+            const [years, setYears] = useState(25);
+            const [rate, setRate] = useState(3.5);
+            const [result, setResult] = useState(null);
+
+            useEffect(() => {
+                const res = finance.calculateMortgage(amount, rate, years);
+                setResult(res);
+            }, [amount, years, rate]);
+
             return (
-                <div className="h-screen flex flex-col items-center justify-center bg-black p-6">
-                    <div className="w-20 h-20 bg-gray-900 rounded-3xl flex items-center justify-center mb-6 border border-gray-800 shadow-[0_0_30px_rgba(10,132,255,0.2)]">
-                        <Icon name="wallet" size={36} className="text-blue-500" />
-                    </div>
-                    <h1 className="text-2xl font-bold mb-1 silver-text">FamilyWealth</h1>
-                    <p className="text-gray-500 text-sm mb-8">Platinum Edition</p>
-                    <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Clave" className="ios-input text-center text-xl mb-4 max-w-xs" />
-                    <button onClick={() => pass.length > 3 ? (!login(pass) && setErr('Error')) : setErr('Mínimo 4')} className="ios-btn bg-blue-600 text-white w-full max-w-xs">Entrar</button>
-                    {err && <p className="text-red-500 mt-4 text-xs">{err}</p>}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-24">
+                    <Card>
+                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-violet-400">
+                            <Icon name="Calculator" /> Simulador Hipotecario AI
+                        </h2>
+                        
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-2">Monto del Préstamo</label>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xl text-zinc-400">€</span>
+                                    <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="cyber-input w-full p-4 text-xl font-mono font-bold bg-transparent border-zinc-700" />
+                                </div>
+                                <input type="range" min="50000" max="1000000" step="1000" value={amount} onChange={e => setAmount(e.target.value)} className="w-full mt-3 accent-violet-500 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer"/>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-2">Años</label>
+                                    <input type="number" value={years} onChange={e => setYears(e.target.value)} className="cyber-input w-full p-3 text-center" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-2">Interés %</label>
+                                    <input type="number" value={rate} step="0.1" onChange={e => setRate(e.target.value)} className="cyber-input w-full p-3 text-center border-violet-500/30 text-violet-400" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 p-4 rounded-xl bg-violet-500/10 border border-violet-500/20 text-center">
+                            <p className="text-zinc-400 text-xs mb-1">Cuota Mensual Estimada</p>
+                            <p className="text-4xl font-bold text-white font-mono">{result?.monthly.toFixed(2)}€</p>
+                        </div>
+                    </Card>
+
+                    <Card className="flex flex-col h-full">
+                        <h3 className="font-bold text-white mb-4">Proyección de Amortización</h3>
+                        <div className="flex-1 flex items-end gap-1 h-64 border-b border-white/10 pb-2 px-2 relative">
+                            {/* Gráfico de Barras Generado Dinámicamente */}
+                            {result?.schedule.map((point, i) => {
+                                if (i % 2 !== 0) return null; // Mostrar menos barras
+                                const height = (point.balance / amount) * 100;
+                                return (
+                                    <div key={i} className="flex-1 bg-zinc-800 hover:bg-violet-500 transition-colors relative group" style={{height: `${height}%`}}>
+                                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-20">
+                                            Año {Math.floor(point.month/12)}: {point.balance.toFixed(0)}€
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mt-6">
+                            <div className="text-center">
+                                <p className="text-xs text-zinc-500">Total Intereses</p>
+                                <p className="text-lg font-bold text-red-400">{(result?.total - amount).toFixed(0)}€</p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-xs text-zinc-500">Total a Pagar</p>
+                                <p className="text-lg font-bold text-white">{result?.total.toFixed(0)}€</p>
+                            </div>
+                        </div>
+                        <Button variant="secondary" className="mt-6 w-full"><Icon name="Download" size={16}/> Exportar PDF</Button>
+                    </Card>
+                </div>
+            );
+        };
+
+        // --- APP PRINCIPAL ---
+
+        const App = () => {
+            const finance = useFinanceSystem();
+            const [view, setView] = useState('dashboard');
+            const [menuOpen, setMenuOpen] = useState(false);
+
+            // Menu Items
+            const navItems = [
+                { id: 'dashboard', label: 'Dashboard', icon: 'LayoutGrid' },
+                { id: 'simulator', label: 'Simulador', icon: 'Calculator' },
+                { id: 'transactions', label: 'Movimientos', icon: 'ArrowRightLeft' },
+                { id: 'settings', label: 'Ajustes', icon: 'Settings' },
+            ];
+
+            return (
+                <div className="min-h-screen max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col">
+                    
+                    {/* TOP BAR */}
+                    <header className="flex justify-between items-center mb-8 sticky top-0 z-50 py-4 bg-black/50 backdrop-blur-md -mx-4 px-4 md:mx-0 md:px-0 rounded-b-2xl md:bg-transparent md:backdrop-blur-none">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-neon">
+                                <Icon name="Hexagon" size={24} />
+                            </div>
+                            <div>
+                                <h1 className="font-bold text-lg leading-none tracking-tight">FamilyWealth</h1>
+                                <p className="text-[10px] text-violet-400 font-mono tracking-widest uppercase">Cyber OS v2.0</p>
+                            </div>
+                        </div>
+
+                        {/* Desktop Nav */}
+                        <nav className="hidden md:flex bg-zinc-900/80 backdrop-blur-md p-1.5 rounded-full border border-white/5 gap-1">
+                            {navItems.map(item => (
+                                <button 
+                                    key={item.id}
+                                    onClick={() => setView(item.id)}
+                                    className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-all ${view === item.id ? 'bg-zinc-800 text-white shadow-inner-light' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                    <Icon name={item.icon} size={16} />
+                                    {item.label}
+                                </button>
+                            ))}
+                        </nav>
+
+                        <div className="flex items-center gap-3">
+                            <button className="p-2 text-zinc-400 hover:text-white relative">
+                                <Icon name="Bell" size={20} />
+                                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-black"></span>
+                            </button>
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-zinc-700 to-zinc-600 border border-white/10 overflow-hidden">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" />
+                            </div>
+                            {/* Mobile Menu Toggle */}
+                            <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden text-white p-1">
+                                <Icon name={menuOpen ? "X" : "Menu"} />
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Mobile Nav Drawer */}
+                    {menuOpen && (
+                        <div className="md:hidden absolute top-20 left-4 right-4 bg-zinc-900 border border-white/10 rounded-2xl p-4 z-50 shadow-2xl animate-in">
+                             {navItems.map(item => (
+                                <button 
+                                    key={item.id}
+                                    onClick={() => { setView(item.id); setMenuOpen(false); }}
+                                    className={`w-full p-4 rounded-xl text-left text-sm font-medium flex items-center gap-3 mb-2 transition-all ${view === item.id ? 'bg-violet-600 text-white' : 'text-zinc-400 hover:bg-zinc-800'}`}
+                                >
+                                    <Icon name={item.icon} size={20} />
+                                    {item.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* CONTENT AREA */}
+                    <main className="flex-1">
+                        {view === 'dashboard' && <Overview finance={finance} />}
+                        {view === 'simulator' && <Simulator finance={finance} />}
+                        {view === 'transactions' && (
+                            <div className="text-center py-20">
+                                <Icon name="Construction" size={48} className="mx-auto text-zinc-700 mb-4" />
+                                <h2 className="text-xl text-zinc-500">Módulo en construcción</h2>
+                            </div>
+                        )}
+                    </main>
+
                 </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<AppProvider><AppContext.Consumer>{({user}) => user ? <Dashboard/> : <Login/>}</AppContext.Consumer></AppProvider>);
+        root.render(<App />);
+    </script>
+
+    <script>
+        lucide.createIcons();
     </script>
 </body>
 </html>
