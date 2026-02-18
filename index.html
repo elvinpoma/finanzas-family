@@ -1,279 +1,325 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FamilyWealth | Cyber OS</title>
-    <meta name="theme-color" content="#09090B">
-    <link rel="manifest" href="manifest.json">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>FamilyWealth Cyber | Native</title>
     
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        bg: '#09090B',
-                        surface: '#18181B',
-                        primary: '#7C3AED',
-                        neon: '#A78BFA',
-                    },
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                        mono: ['"JetBrains Mono"', 'monospace'],
-                    },
-                    boxShadow: {
-                        'neon': '0 0 20px -5px rgba(124, 58, 237, 0.3)',
-                    }
-                }
-            }
-        }
-    </script>
-
     <style>
-        body { background-color: #050505; color: #E4E4E7; -webkit-font-smoothing: antialiased; }
+        :root {
+            --bg: #09090b;
+            --surface: #18181b;
+            --surface-light: #27272a;
+            --primary: #7c3aed;
+            --primary-glow: rgba(124, 58, 237, 0.4);
+            --text-main: #ffffff;
+            --text-muted: #a1a1aa;
+            --success: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         
-        /* Luz Ambiental de Fondo */
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            padding-bottom: 80px; /* Espacio para el menú inferior */
+            min-height: 100vh;
+        }
+
+        /* ATMÓSFERA */
         .ambient-light {
-            position: fixed; top: -20%; left: 50%; transform: translateX(-50%);
-            width: 120vw; height: 60vh;
-            background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, rgba(9, 9, 11, 0) 70%);
-            z-index: -1; pointer-events: none;
+            position: fixed; top: -20vh; left: 50%; transform: translateX(-50%);
+            width: 100vw; height: 60vh;
+            background: radial-gradient(circle, rgba(124,58,237,0.15) 0%, rgba(9,9,11,0) 70%);
+            pointer-events: none; z-index: -1;
         }
 
-        /* Estilo Tarjetas Glassmorphism */
-        .cyber-card {
-            background: rgba(24, 24, 27, 0.65);
-            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+
+        /* HEADER */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .logo-area { display: flex; align-items: center; gap: 12px; }
+        .logo-box { 
+            width: 40px; height: 40px; 
+            background: linear-gradient(135deg, #7c3aed, #4f46e5); 
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+        .user-avatar { width: 35px; height: 35px; background: #333; border-radius: 50%; border: 1px solid #555; overflow: hidden; }
+        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* TARJETAS (Glassmorphism) */
+        .card {
+            background: rgba(24, 24, 27, 0.7);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 24px;
+            border-radius: 20px;
             padding: 24px;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
-        /* Inputs */
-        .cyber-input {
-            background: #0f0f12; border: 1px solid #27272A; color: white; border-radius: 12px;
-            width: 100%; padding: 12px; outline: none; transition: all 0.3s;
+        .card-title {
+            color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
         }
-        .cyber-input:focus { border-color: #7C3AED; box-shadow: 0 0 15px -3px rgba(124, 58, 237, 0.4); }
 
-        /* Utilidades */
-        .hidden-tab { display: none; }
-        .active-nav { background-color: #7C3AED; color: white; box-shadow: 0 0 20px -5px rgba(124, 58, 237, 0.5); }
-        .inactive-nav { color: #71717A; }
+        /* TEXTOS GRANDES */
+        .big-number { font-size: 42px; font-weight: 800; letter-spacing: -1px; margin-bottom: 10px; }
+        .badge { 
+            display: inline-block; padding: 4px 12px; border-radius: 20px; 
+            font-size: 12px; font-weight: bold; background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        /* LISTAS */
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .list-item:last-child { border-bottom: none; }
+        .item-left { display: flex; align-items: center; gap: 12px; }
+        .icon-box { 
+            width: 36px; height: 36px; background: var(--surface-light); border-radius: 10px; 
+            display: flex; align-items: center; justify-content: center; color: var(--primary);
+        }
+
+        /* INPUTS PARA SIMULADOR */
+        .input-group { margin-bottom: 15px; }
+        label { display: block; color: var(--text-muted); font-size: 12px; margin-bottom: 5px; text-transform: uppercase; }
+        input[type="number"], input[type="range"] {
+            width: 100%; background: #0f0f12; border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; font-size: 16px; outline: none; transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
+
+        /* GRÁFICO BARRAS CSS */
+        .chart-container { display: flex; align-items: flex-end; height: 120px; gap: 4px; padding-top: 20px; border-bottom: 1px solid #333; }
+        .bar { flex: 1; background: var(--surface-light); border-radius: 4px 4px 0 0; transition: height 0.5s ease; position: relative; }
+        .bar:hover { background: var(--primary); }
+
+        /* NAVEGACIÓN INFERIOR */
+        .dock {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(15px);
+            padding: 8px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+            display: flex; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 100;
+        }
+        .dock-btn {
+            background: none; border: none; padding: 12px; border-radius: 14px; cursor: pointer; color: #666; transition: 0.3s;
+        }
+        .dock-btn.active { background: var(--primary); color: white; box-shadow: 0 0 15px var(--primary-glow); }
+        .dock-btn svg { width: 24px; height: 24px; stroke-width: 2; }
+
+        /* UTILIDADES VISUALIZACIÓN */
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
     </style>
 </head>
 <body>
 
     <div class="ambient-light"></div>
 
-    <div class="max-w-xl mx-auto min-h-screen flex flex-col p-4 pb-24">
+    <div class="container">
         
-        <header class="flex justify-between items-center mb-6 py-2">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-neon">
-                    <i data-lucide="hexagon" class="w-6 h-6"></i>
+        <header>
+            <div class="logo-area">
+                <div class="logo-box">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-none text-white">FamilyWealth</h1>
-                    <p class="text-[10px] text-violet-400 font-mono uppercase tracking-widest">Cyber OS</p>
+                    <h1 style="font-size: 18px; font-weight: 700;">FamilyWealth</h1>
+                    <p style="font-size: 11px; color: var(--primary); letter-spacing: 1px;">CYBER OS</p>
                 </div>
             </div>
-            <div class="w-8 h-8 rounded-full bg-zinc-800 border border-white/20 overflow-hidden">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User">
+            <div class="user-avatar">
+                <svg width="35" height="35" viewBox="0 0 24 24" fill="#222" stroke="none"><circle cx="12" cy="12" r="12"/></svg>
             </div>
         </header>
 
-        <main id="view-dashboard">
-            
-            <div class="cyber-card relative overflow-hidden text-center py-10">
-                <div class="absolute top-0 right-0 opacity-10 p-4"><i data-lucide="activity" width="100" height="100"></i></div>
-                <h3 class="text-zinc-500 text-xs uppercase tracking-widest mb-2 font-bold">Patrimonio Neto</h3>
-                <h1 class="text-5xl font-bold text-white mb-4 tracking-tighter">148.250€</h1>
-                <div class="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 px-3 py-1 rounded-full text-green-400 text-xs font-bold">
-                    <i data-lucide="trending-up" width="14"></i> +4.2% este mes
-                </div>
+        <main id="view-dashboard" class="fade-in">
+            <div class="card" style="text-align: center; position: relative; overflow: hidden;">
+                <div class="card-title" style="justify-content: center;">PATRIMONIO NETO</div>
+                <div class="big-number">148.250€</div>
+                <div class="badge">▲ +4.2% ESTE MES</div>
             </div>
 
-            <div class="cyber-card">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-white flex items-center gap-2"><i data-lucide="pie-chart" width="18"></i> Activos</h3>
-                    <button class="text-violet-400 text-xs font-bold">+ Añadir</button>
+            <div class="card">
+                <div class="card-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                    DESGLOSE DE ACTIVOS
                 </div>
                 
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-zinc-900 rounded-lg text-violet-400"><i data-lucide="wallet" width="18"></i></div>
-                            <div>
-                                <p class="text-sm font-medium text-white">Cuenta Principal</p>
-                                <p class="text-[10px] text-zinc-500 uppercase">Efectivo</p>
-                            </div>
+                <div class="list-item">
+                    <div class="item-left">
+                        <div class="icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg></div>
+                        <div>
+                            <div style="font-weight: 600;">Cuenta Principal</div>
+                            <div style="font-size: 11px; color: #666;">EFECTIVO</div>
                         </div>
-                        <span class="font-mono text-sm font-bold text-white">12.450€</span>
                     </div>
-                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-zinc-900 rounded-lg text-orange-400"><i data-lucide="bitcoin" width="18"></i></div>
-                            <div>
-                                <p class="text-sm font-medium text-white">Bitcoin</p>
-                                <p class="text-[10px] text-zinc-500 uppercase">Crypto</p>
-                            </div>
-                        </div>
-                        <span class="font-mono text-sm font-bold text-white">35.000€</span>
-                    </div>
+                    <div style="font-family: monospace; font-weight: 700;">12.450€</div>
                 </div>
-            </div>
 
-            <div class="cyber-card">
-                <h3 class="font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="target" width="18"></i> Metas</h3>
-                <div class="space-y-4">
-                    <div>
-                        <div class="flex justify-between text-xs mb-1 text-zinc-400">
-                            <span>Tesla Model 3</span>
-                            <span class="text-white font-mono">12k / 45k</span>
-                        </div>
-                        <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                            <div class="h-full bg-gradient-to-r from-blue-500 to-cyan-500 w-[26%]"></div>
+                <div class="list-item">
+                    <div class="item-left">
+                        <div class="icon-box" style="color: orange;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-3.94-.694m5.155-6.2L8.279 5.343m-4.221 5.485L9.99 11.838"></path></svg></div>
+                        <div>
+                            <div style="font-weight: 600;">Bitcoin Cold Wallet</div>
+                            <div style="font-size: 11px; color: #666;">CRYPTO</div>
                         </div>
                     </div>
-                    <div>
-                        <div class="flex justify-between text-xs mb-1 text-zinc-400">
-                            <span>Viaje Japón</span>
-                            <span class="text-white font-mono">1.5k / 5k</span>
-                        </div>
-                        <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                            <div class="h-full bg-gradient-to-r from-pink-500 to-rose-500 w-[30%]"></div>
+                    <div style="font-family: monospace; font-weight: 700;">35.000€</div>
+                </div>
+
+                <div class="list-item">
+                    <div class="item-left">
+                        <div class="icon-box" style="color: #10b981;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+                        <div>
+                            <div style="font-weight: 600;">Fondo Indexado</div>
+                            <div style="font-size: 11px; color: #666;">INVERSIÓN</div>
                         </div>
                     </div>
+                    <div style="font-family: monospace; font-weight: 700;">100.800€</div>
                 </div>
             </div>
         </main>
 
-        <main id="view-simulator" class="hidden-tab">
-            <div class="cyber-card">
-                <h2 class="text-xl font-bold mb-6 flex items-center gap-2 text-violet-400">
-                    <i data-lucide="calculator"></i> Simulador Hipoteca
-                </h2>
+        <main id="view-simulator" class="hidden fade-in">
+            <div class="card">
+                <div class="card-title" style="color: var(--primary);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="8" y2="6"></line><line x1="16" y1="6" x2="16" y2="6"></line><line x1="12" y1="6" x2="12" y2="6"></line><line x1="8" y1="10" x2="16" y2="10"></line><line x1="8" y1="14" x2="16" y2="14"></line><line x1="8" y1="18" x2="16" y2="18"></line></svg>
+                    SIMULADOR HIPOTECA
+                </div>
+                
+                <div class="input-group">
+                    <label>Monto del Préstamo (€)</label>
+                    <input type="number" id="sim-amount" value="250000">
+                    <input type="range" id="range-amount" min="50000" max="1000000" step="5000" value="250000" style="margin-top: 10px; width:100%;">
+                </div>
 
-                <div class="space-y-4 mb-6">
-                    <div>
-                        <label class="text-xs text-zinc-500 uppercase font-bold">Monto Préstamo (€)</label>
-                        <input type="number" id="sim-amount" value="250000" class="cyber-input text-xl font-mono font-bold">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="input-group">
+                        <label>Plazo (Años)</label>
+                        <input type="number" id="sim-years" value="25">
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs text-zinc-500 uppercase font-bold">Años</label>
-                            <input type="number" id="sim-years" value="30" class="cyber-input text-center">
-                        </div>
-                        <div>
-                            <label class="text-xs text-zinc-500 uppercase font-bold">Interés %</label>
-                            <input type="number" id="sim-rate" value="3.5" step="0.1" class="cyber-input text-center text-violet-400 border-violet-500/30">
-                        </div>
+                    <div class="input-group">
+                        <label>Interés (%)</label>
+                        <input type="number" id="sim-rate" value="3.5" step="0.1" style="color: var(--primary); border-color: rgba(124,58,237,0.5);">
                     </div>
                 </div>
 
-                <div class="bg-violet-500/10 border border-violet-500/20 p-4 rounded-xl text-center mb-6">
-                    <p class="text-xs text-zinc-400 mb-1">Cuota Mensual Estimada</p>
-                    <p class="text-4xl font-bold text-white font-mono" id="sim-result">0.00€</p>
+                <div style="background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.2); border-radius: 12px; padding: 15px; text-align: center; margin-top: 10px;">
+                    <div style="font-size: 12px; color: #aaa;">CUOTA MENSUAL ESTIMADA</div>
+                    <div id="sim-result" style="font-size: 32px; font-weight: 800; color: white; font-family: monospace;">0.00€</div>
                 </div>
+            </div>
 
-                <div class="h-32 flex items-end gap-1 border-b border-white/10 pb-1" id="sim-chart">
+            <div class="card">
+                <div class="card-title">AMORTIZACIÓN VISUAL</div>
+                <div id="sim-chart" class="chart-container">
                     </div>
-                <div class="flex justify-between text-[10px] text-zinc-500 mt-2">
-                    <span>Inicio</span>
-                    <span>Final</span>
+                <div style="display: flex; justify-content: space-between; font-size: 10px; color: #555; margin-top: 5px;">
+                    <span>Año 1</span>
+                    <span>Fin del plazo</span>
                 </div>
             </div>
         </main>
+    </div>
 
-        <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900/90 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex gap-2 shadow-2xl z-50">
-            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="p-3 rounded-xl transition-all active-nav">
-                <i data-lucide="layout-grid"></i>
-            </button>
-            <button onclick="switchTab('simulator')" id="btn-simulator" class="p-3 rounded-xl transition-all inactive-nav hover:text-white">
-                <i data-lucide="calculator"></i>
-            </button>
-        </nav>
-
+    <div class="dock">
+        <button id="btn-dash" class="dock-btn active" onclick="switchTab('dashboard')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        </button>
+        <button id="btn-sim" class="dock-btn" onclick="switchTab('simulator')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="8" y2="6"></line><line x1="16" y1="6" x2="16" y2="6"></line><line x1="12" y1="6" x2="12" y2="6"></line><line x1="8" y1="10" x2="16" y2="10"></line></svg>
+        </button>
     </div>
 
     <script>
-        // 1. Inicializar Iconos
-        lucide.createIcons();
-
-        // 2. Lógica de Navegación (Tabs)
-        function switchTab(tabName) {
-            // Ocultar todo
-            document.getElementById('view-dashboard').classList.add('hidden-tab');
-            document.getElementById('view-simulator').classList.add('hidden-tab');
+        // --- 1. LÓGICA DE NAVEGACIÓN ---
+        function switchTab(tab) {
+            // Ocultar todas las vistas
+            document.getElementById('view-dashboard').classList.add('hidden');
+            document.getElementById('view-simulator').classList.add('hidden');
             
-            // Desactivar botones
-            document.getElementById('btn-dashboard').className = "p-3 rounded-xl transition-all inactive-nav hover:text-white";
-            document.getElementById('btn-simulator').className = "p-3 rounded-xl transition-all inactive-nav hover:text-white";
+            // Quitar clase activa de botones
+            document.getElementById('btn-dash').classList.remove('active');
+            document.getElementById('btn-sim').classList.remove('active');
 
-            // Mostrar el seleccionado
-            document.getElementById('view-' + tabName).classList.remove('hidden-tab');
-            document.getElementById('btn-' + tabName).className = "p-3 rounded-xl transition-all active-nav";
+            // Activar seleccionada
+            if(tab === 'dashboard') {
+                document.getElementById('view-dashboard').classList.remove('hidden');
+                document.getElementById('btn-dash').classList.add('active');
+            } else {
+                document.getElementById('view-simulator').classList.remove('hidden');
+                document.getElementById('btn-sim').classList.add('active');
+                calculateMortgage(); // Recalcular al entrar
+            }
         }
 
-        // 3. Lógica del Simulador (Matemáticas)
-        const inputs = ['sim-amount', 'sim-years', 'sim-rate'];
+        // --- 2. LÓGICA DEL SIMULADOR ---
+        const inputs = ['sim-amount', 'sim-years', 'sim-rate', 'range-amount'];
+        
+        // Event Listeners
         inputs.forEach(id => {
-            document.getElementById(id).addEventListener('input', calculateMortgage);
+            const el = document.getElementById(id);
+            if(el) el.addEventListener('input', (e) => {
+                // Sincronizar slider con input numérico
+                if(e.target.id === 'range-amount') document.getElementById('sim-amount').value = e.target.value;
+                if(e.target.id === 'sim-amount') document.getElementById('range-amount').value = e.target.value;
+                calculateMortgage();
+            });
         });
 
         function calculateMortgage() {
-            const amount = parseFloat(document.getElementById('sim-amount').value) || 0;
-            const years = parseFloat(document.getElementById('sim-years').value) || 0;
-            const rate = parseFloat(document.getElementById('sim-rate').value) || 0;
+            const P = parseFloat(document.getElementById('sim-amount').value);
+            const years = parseFloat(document.getElementById('sim-years').value);
+            const annualRate = parseFloat(document.getElementById('sim-rate').value);
 
-            const r = rate / 100 / 12;
+            if (!P || !years || !annualRate) return;
+
+            const r = annualRate / 100 / 12;
             const n = years * 12;
-            
-            let monthly = 0;
-            if (r > 0 && n > 0) {
-                monthly = (amount * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-            }
 
+            // Fórmula Cuota Fija
+            const monthly = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+            
             // Actualizar Texto
             document.getElementById('sim-result').innerText = monthly.toFixed(2) + '€';
 
-            // Actualizar Gráfico Visual
-            const chartContainer = document.getElementById('sim-chart');
-            chartContainer.innerHTML = ''; // Limpiar
+            // Generar Gráfico
+            renderChart(P, r, n, monthly);
+        }
+
+        function renderChart(principal, rate, months, payment) {
+            const chart = document.getElementById('sim-chart');
+            chart.innerHTML = ''; // Limpiar
             
-            let balance = amount;
-            // Generar 20 barras para visualizar
-            const steps = 20;
-            const stepSize = n / steps;
-            
-            for(let i=0; i<steps; i++) {
-                // Cálculo simplificado para el gráfico
-                const progress = i / steps;
-                const h = (1 - progress) * 100; 
+            let balance = principal;
+            const barsCount = 20; // Número de barras a mostrar
+            const step = Math.floor(months / barsCount);
+
+            for (let i = 0; i < barsCount; i++) {
+                // Calcular balance en este punto
+                // B = P * ((1+r)^n - (1+r)^p) / ((1+r)^n - 1)  (Aproximado para visualización rápida)
+                
+                // Simulación iterativa simplificada para el gráfico
+                for(let m=0; m<step; m++) {
+                    balance = balance * (1 + rate) - payment;
+                }
+                if(balance < 0) balance = 0;
+
+                const heightPercent = (balance / principal) * 100;
                 
                 const bar = document.createElement('div');
-                bar.className = 'flex-1 bg-zinc-700 rounded-t-sm hover:bg-violet-500 transition-colors';
-                bar.style.height = h + '%';
-                chartContainer.appendChild(bar);
+                bar.className = 'bar';
+                bar.style.height = `${heightPercent}%`;
+                chart.appendChild(bar);
             }
         }
 
-        // Calcular al inicio
-        calculateMortgage();
+        // Cálculo inicial
+        document.addEventListener('DOMContentLoaded', () => {
+            calculateMortgage();
+        });
 
-        // Service Worker (Para que sea PWA instalable)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
-        }
     </script>
 </body>
 </html>
