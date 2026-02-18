@@ -1,17 +1,23 @@
-// Service Worker Básico v2
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open('fw-v2').then((cache) => cache.addAll([
-      './index.html',
-      './manifest.json',
-      'https://cdn.tailwindcss.com',
-      'https://unpkg.com/lucide@latest'
-    ])),
+const CACHE_NAME = 'fw-cyber-v1';
+const urlsToCache = [
+  './',
+  './index.html',
+  './manifest.json'
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(urlsToCache))
   );
 });
 
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((response) => response || fetch(e.request)),
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        if (response) return response;
+        return fetch(event.request);
+      })
   );
 });
