@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FamilyWealth Pro</title>
+    <title>FamilyWealth Lifestyle</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
 
@@ -15,31 +15,23 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        body { background-color: #000; color: #f5f5f7; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #000; color: #f5f5f7; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, Helvetica, sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        /* Componentes UI */
-        .ios-card { background: #1C1C1E; border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 16px; }
-        .ios-input { background: #2C2C2E; border: 1px solid #3A3A3C; border-radius: 12px; padding: 14px; color: white; width: 100%; outline: none; font-size: 16px; transition: border-color 0.2s; }
-        .ios-input:focus { border-color: #0A84FF; }
+        /* UI Components */
+        .ios-card { background: #1C1C1E; border-radius: 22px; padding: 20px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .ios-input { background: #2C2C2E; border: 1px solid #3A3A3C; border-radius: 12px; padding: 14px; color: white; width: 100%; outline: none; font-size: 16px; transition: all 0.2s; }
+        .ios-input:focus { border-color: #0A84FF; background: #323234; }
         .ios-btn { border-radius: 14px; font-weight: 600; padding: 16px; transition: transform 0.1s, opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .ios-btn:active { transform: scale(0.98); opacity: 0.8; }
+        .ios-btn:active { transform: scale(0.97); opacity: 0.8; }
         
-        /* Gráfico CSS Puro */
-        .donut-chart {
-            width: 160px; height: 160px; border-radius: 50%;
-            background: conic-gradient(var(--c1, #FF453A) 0 var(--p1, 0%), var(--c2, #FF9F0A) 0 var(--p2, 0%), var(--c3, #30D158) 0 var(--p3, 100%));
-            position: relative; margin: 0 auto; display: flex; align-items: center; justify-content: center;
-        }
-        .donut-hole {
-            width: 120px; height: 120px; background: #1C1C1E; border-radius: 50%; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2;
-        }
-
-        /* Utilidades */
-        .badge { padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-        .scroll-hide::-webkit-scrollbar { display: none; }
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Utility */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .emoji-btn { transition: all 0.2s; filter: grayscale(1); opacity: 0.5; transform: scale(0.9); }
+        .emoji-btn.active { filter: grayscale(0); opacity: 1; transform: scale(1.1); background: rgba(255,255,255,0.1); border-radius: 12px; }
+        
+        /* Animaciones */
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-enter { animation: slideUp 0.4s ease-out forwards; }
     </style>
 </head>
 <body>
@@ -48,354 +40,268 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, createContext, useContext } = React;
 
-        // --- ICONOS ---
-        const Icon = ({ name, size = 20, color = "currentColor", className="" }) => {
+        // --- CONSTANTES DE CATEGORÍAS (EMOJIS) ---
+        const CATS = [
+            { id: 'home', icon: '🏠', label: 'Casa', color: 'text-blue-400' },
+            { id: 'food', icon: '🍔', label: 'Comida', color: 'text-orange-400' },
+            { id: 'transport', icon: '🚗', label: 'Auto', color: 'text-red-400' },
+            { id: 'shop', icon: '🛍️', label: 'Compras', color: 'text-pink-400' },
+            { id: 'fun', icon: '🎉', label: 'Ocio', color: 'text-purple-400' },
+            { id: 'health', icon: '💊', label: 'Salud', color: 'text-green-400' },
+            { id: 'bills', icon: '📄', label: 'Factura', color: 'text-yellow-400' },
+            { id: 'misc', icon: '📦', label: 'Otros', color: 'text-gray-400' }
+        ];
+
+        const Icon = ({ name, size = 20, className="" }) => {
             useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, [name]);
-            return <i data-lucide={name} width={size} height={size} style={{color}} className={className}></i>;
+            return <i data-lucide={name} width={size} height={size} className={className}></i>;
         };
 
-        // --- CONTEXTO GLOBAL ---
+        // --- CONTEXTO ---
         const AppContext = createContext();
 
         const AppProvider = ({ children }) => {
             const [user, setUser] = useState(null);
-            const [data, setData] = useState({ txs: [], goals: [] }); // Ahora guardamos metas también
+            // Estructura de datos v4: txs (transacciones), subs (suscripciones), goals (metas)
+            const [data, setData] = useState({ txs: [], subs: [], goals: [] });
 
             const login = (password) => {
                 try {
-                    const encrypted = localStorage.getItem('fw_v3_db');
+                    const encrypted = localStorage.getItem('fw_v4_db');
                     if (!encrypted) {
-                        setUser({ key: password });
-                        setData({ txs: [], goals: [] });
-                        save({ txs: [], goals: [] }, password);
+                        // Nuevo usuario
+                        const initial = { txs: [], subs: [], goals: [] };
+                        setUser({ key: password }); setData(initial); save(initial, password);
                         return true;
                     }
                     const bytes = CryptoJS.AES.decrypt(encrypted, password);
                     const decrypted = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-                    setUser({ key: password });
-                    setData(decrypted);
+                    
+                    // Migración segura: si vienen datos viejos sin 'subs', los creamos
+                    if(!decrypted.subs) decrypted.subs = [];
+                    if(!decrypted.goals) decrypted.goals = [];
+                    
+                    setUser({ key: password }); setData(decrypted);
                     return true;
                 } catch (e) { return false; }
             };
 
             const save = (newData, key = user.key) => {
                 const encrypted = CryptoJS.AES.encrypt(JSON.stringify(newData), key).toString();
-                localStorage.setItem('fw_v3_db', encrypted);
+                localStorage.setItem('fw_v4_db', encrypted);
             };
 
-            const addTx = (tx) => {
-                const newData = { ...data, txs: [{...tx, id: Date.now()}, ...data.txs] };
-                setData(newData); save(newData);
+            // Acciones genéricas
+            const addItem = (type, item) => {
+                const updated = { ...data, [type]: [{ ...item, id: Date.now() }, ...data[type]] };
+                setData(updated); save(updated);
             };
-
-            const delTx = (id) => {
-                const newData = { ...data, txs: data.txs.filter(t => t.id !== id) };
-                setData(newData); save(newData);
-            };
-
-            const addGoal = (goal) => {
-                const newData = { ...data, goals: [...data.goals, {...goal, id: Date.now()}] };
-                setData(newData); save(newData);
-            };
-
-             const deleteGoal = (id) => {
-                const newData = { ...data, goals: data.goals.filter(g => g.id !== id) };
-                setData(newData); save(newData);
+            const delItem = (type, id) => {
+                const updated = { ...data, [type]: data[type].filter(i => i.id !== id) };
+                setData(updated); save(updated);
             };
 
             const exportData = () => {
-                const dataStr = JSON.stringify(data, null, 2);
-                const blob = new Blob([dataStr], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
                 const a = document.createElement('a');
-                a.href = url; a.download = `backup_familywealth_${new Date().toISOString().slice(0,10)}.json`;
+                a.href = URL.createObjectURL(blob); a.download = `backup_fw_${new Date().toISOString().slice(0,10)}.json`;
                 a.click();
             };
 
             return (
-                <AppContext.Provider value={{ user, login, data, addTx, delTx, addGoal, deleteGoal, exportData }}>
+                <AppContext.Provider value={{ user, login, data, addItem, delItem, exportData }}>
                     {children}
                 </AppContext.Provider>
             );
         };
 
-        // --- LOGIN ---
+        // --- PANTALLA LOGIN ---
         const Login = () => {
             const { login } = useContext(AppContext);
             const [pass, setPass] = useState('');
             const [err, setErr] = useState('');
-
             return (
-                <div className="h-screen flex flex-col items-center justify-center p-6 bg-black relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,#1a1a1a,transparent_70%)]"></div>
-                    <div className="z-10 w-full max-w-xs text-center">
-                        <div className="mx-auto w-20 h-20 bg-gray-900 rounded-3xl border border-gray-800 flex items-center justify-center mb-8 shadow-2xl shadow-blue-900/20">
-                            <Icon name="shield-check" size={40} color="#0A84FF" />
-                        </div>
-                        <h1 className="text-3xl font-bold mb-2 text-white">FamilyWealth</h1>
-                        <p className="text-gray-500 mb-8 text-sm">Finanzas Encriptadas v3.0</p>
-                        <input type="password" value={pass} onChange={e => {setPass(e.target.value); setErr('')}} placeholder="Tu Clave Maestra" className="ios-input text-center text-xl mb-4 bg-gray-900 border-gray-800" />
-                        {err && <p className="text-red-500 text-xs mb-4">{err}</p>}
-                        <button onClick={() => pass.length > 3 ? (!login(pass) && setErr('Clave incorrecta')) : setErr('Mínimo 4 caracteres')} className="ios-btn bg-[#0A84FF] text-white w-full hover:bg-blue-600">
-                            Desbloquear
-                        </button>
+                <div className="h-screen flex flex-col items-center justify-center bg-black p-6">
+                    <div className="w-20 h-20 bg-gray-900 rounded-3xl flex items-center justify-center mb-6 border border-gray-800 shadow-[0_0_30px_rgba(10,132,255,0.2)]">
+                        <Icon name="wallet" size={36} className="text-blue-500" />
                     </div>
+                    <h1 className="text-2xl font-bold mb-1">FamilyWealth</h1>
+                    <p className="text-gray-500 text-sm mb-8">Gestión Financiera v4.0</p>
+                    <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Clave de Acceso" className="ios-input text-center text-xl mb-4 max-w-xs" />
+                    <button onClick={() => pass.length > 3 ? (!login(pass) && setErr('Error')) : setErr('Mínimo 4')} className="ios-btn bg-blue-600 text-white w-full max-w-xs">Entrar</button>
+                    {err && <p className="text-red-500 mt-4 text-xs">{err}</p>}
                 </div>
             );
         };
 
-        // --- SIMULADOR AVANZADO (LO QUE PEDISTE) ---
-        const LoanSimulator = () => {
-            // Estado para inputs manuales
-            const [amount, setAmount] = useState(15000);
-            const [months, setMonths] = useState(24);
-            const [rate, setRate] = useState(5.50);
-            const [showTable, setShowTable] = useState(false);
+        // --- COMPONENTE: SUBSCRIPTIONS (NUEVO) ---
+        const SubscriptionManager = () => {
+            const { data, addItem, delItem } = useContext(AppContext);
+            const [form, setForm] = useState({ name: '', amount: '' });
+            const [isOpen, setIsOpen] = useState(false);
 
-            const result = useMemo(() => {
-                const r = (rate / 100) / 12;
-                const m = Math.max(1, months); // Evitar división por cero
-                const cuota = amount * ((r * Math.pow(1+r, m)) / (Math.pow(1+r, m) - 1));
-                
-                // Generar tabla
-                let balance = amount;
-                const table = [];
-                for(let i=1; i<=Math.min(m, 60); i++) { // Limitamos visualización a 60 meses para no saturar
-                    const interest = balance * r;
-                    const capital = cuota - interest;
-                    balance -= capital;
-                    table.push({ i, interest, capital, balance });
-                }
-                return { cuota: isNaN(cuota) ? 0 : cuota, table, total: cuota * m };
-            }, [amount, months, rate]);
+            const totalMonthly = data.subs.reduce((acc, s) => acc + s.amount, 0);
+
+            const handleAdd = () => {
+                if(!form.name || !form.amount) return;
+                addItem('subs', { name: form.name, amount: parseFloat(form.amount) });
+                setForm({name:'', amount:''}); setIsOpen(false);
+            };
 
             return (
-                <div className="ios-card bg-gray-900 border border-orange-500/20">
-                    <div className="flex justify-between items-start mb-6">
+                <div className="ios-card bg-gray-900 border border-purple-500/20">
+                    <div className="flex justify-between items-start mb-4">
                         <div>
-                            <h3 className="text-orange-500 font-bold flex items-center gap-2"><Icon name="calculator" size={18}/> Simulador Pro</h3>
-                            <p className="text-[10px] text-gray-500 mt-1">Calculadora Hipoteca / Préstamo</p>
+                            <h3 className="text-purple-400 font-bold flex items-center gap-2"><Icon name="zap" size={16}/> Gastos Fijos</h3>
+                            <p className="text-[10px] text-gray-500 mt-1">Suscripciones y Recibos</p>
                         </div>
                         <div className="text-right">
-                            <div className="text-3xl font-bold text-white">{result.cuota.toFixed(2)}€</div>
-                            <div className="text-[10px] text-gray-400">Cuota Mensual</div>
+                            <div className="text-xl font-bold text-white">{totalMonthly.toFixed(2)}€</div>
+                            <div className="text-[10px] text-gray-400">/mes</div>
                         </div>
                     </div>
 
-                    {/* INPUTS MANUALES */}
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label className="text-xs text-gray-500 ml-1 mb-1 block">Importe (€)</label>
-                            <input type="number" value={amount} onChange={e => setAmount(Number(e.target.value))} className="ios-input text-center font-mono" />
-                        </div>
-                        <div>
-                            <label className="text-xs text-gray-500 ml-1 mb-1 block">Plazo (Meses)</label>
-                            <input type="number" value={months} onChange={e => setMonths(Number(e.target.value))} className="ios-input text-center font-mono" />
-                        </div>
-                    </div>
-                    <div className="mb-4">
-                         <label className="text-xs text-gray-500 ml-1 mb-1 block">Interés Anual (%)</label>
-                         <input type="number" step="0.1" value={rate} onChange={e => setRate(Number(e.target.value))} className="ios-input text-center font-mono" />
-                    </div>
-
-                    {/* BOTÓN TOGGLE TABLA */}
-                    <button onClick={() => setShowTable(!showTable)} className="w-full py-2 bg-white/5 rounded-lg text-xs text-gray-400 hover:text-white transition-colors mb-2">
-                        {showTable ? 'Ocultar Tabla' : 'Ver Tabla de Amortización'}
-                    </button>
-
-                    {/* TABLA DESPLEGABLE */}
-                    {showTable && (
-                        <div className="bg-black/40 rounded-xl overflow-hidden mt-2 fade-in">
-                            <table className="w-full text-[10px] text-gray-400">
-                                <thead className="bg-white/5 text-white">
-                                    <tr><th className="p-2 text-left">Mes</th><th className="p-2">Interés</th><th className="p-2">Capital</th><th className="p-2 text-right">Pendiente</th></tr>
-                                </thead>
-                                <tbody>
-                                    {result.table.map(row => (
-                                        <tr key={row.i} className="border-t border-white/5">
-                                            <td className="p-2">{row.i}</td>
-                                            <td className="p-2 text-red-400">{row.interest.toFixed(2)}</td>
-                                            <td className="p-2 text-green-400">{row.capital.toFixed(2)}</td>
-                                            <td className="p-2 text-right">{Math.max(0, row.balance).toFixed(2)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            {months > 60 && <p className="text-center text-[10px] p-2 text-gray-600">... mostrados primeros 60 meses</p>}
+                    {/* Botón Toggle Formulario */}
+                    {!isOpen ? (
+                        <button onClick={()=>setIsOpen(true)} className="w-full py-2 bg-white/5 rounded-xl text-xs text-gray-400 hover:text-white mb-4">+ Añadir Suscripción</button>
+                    ) : (
+                        <div className="flex gap-2 mb-4 animate-enter">
+                            <input placeholder="Nombre (ej: Netflix)" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="ios-input text-xs py-2"/>
+                            <input type="number" placeholder="€" value={form.amount} onChange={e=>setForm({...form, amount:e.target.value})} className="ios-input w-20 text-xs py-2 text-center"/>
+                            <button onClick={handleAdd} className="bg-purple-600 px-3 rounded-xl text-white"><Icon name="check" size={16}/></button>
                         </div>
                     )}
+
+                    {/* Lista */}
+                    <div className="space-y-2">
+                        {data.subs.map(s => (
+                            <div key={s.id} className="flex justify-between items-center bg-black/20 p-2 rounded-lg group">
+                                <span className="text-sm text-gray-300">{s.name}</span>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-sm font-mono font-bold">{s.amount}€</span>
+                                    <button onClick={()=>delItem('subs', s.id)} className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="trash" size={12}/></button>
+                                </div>
+                            </div>
+                        ))}
+                        {data.subs.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-white/5 text-center">
+                                <p className="text-[10px] text-gray-500">Proyección Anual: <span className="text-purple-400 font-bold">{(totalMonthly * 12).toFixed(2)}€</span></p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             );
         };
-
-        // --- COMPONENTE: METAS DE AHORRO ---
-        const Goals = () => {
-             const { data, addGoal, deleteGoal } = useContext(AppContext);
-             const [form, setForm] = useState({ name: '', target: '' });
-             const [isOpen, setIsOpen] = useState(false);
-
-             const handleAdd = () => {
-                 if(!form.name || !form.target) return;
-                 addGoal({ name: form.name, target: parseFloat(form.target), saved: 0 }); // saved podría venir de un cálculo real
-                 setForm({name:'', target:''}); setIsOpen(false);
-             };
-
-             // Calculamos ahorro disponible real (Balance total)
-             const totalIncome = data.txs.filter(t=>t.type==='in').reduce((a,b)=>a+b.amount,0);
-             const totalExpense = data.txs.filter(t=>t.type==='out').reduce((a,b)=>a+b.amount,0);
-             const currentSavings = totalIncome - totalExpense;
-
-             return (
-                <div className="ios-card">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-bold text-purple-400 flex items-center gap-2"><Icon name="target" size={18}/> Metas</h3>
-                        <button onClick={() => setIsOpen(!isOpen)} className="text-xs bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full">+ Nueva</button>
-                    </div>
-
-                    {isOpen && (
-                        <div className="mb-4 bg-white/5 p-3 rounded-xl fade-in space-y-2">
-                            <input placeholder="Nombre (ej: Coche)" value={form.name} onChange={e=>setForm({...form, name: e.target.value})} className="ios-input text-sm py-2"/>
-                            <div className="flex gap-2">
-                                <input type="number" placeholder="Objetivo €" value={form.target} onChange={e=>setForm({...form, target: e.target.value})} className="ios-input text-sm py-2"/>
-                                <button onClick={handleAdd} className="bg-purple-600 rounded-lg px-4 text-white"><Icon name="check" size={16}/></button>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="space-y-4">
-                        {data.goals.length === 0 ? <p className="text-gray-600 text-xs text-center">Define un objetivo financiero.</p> : 
-                        data.goals.map(g => {
-                            const progress = Math.min(100, (currentSavings / g.target) * 100);
-                            return (
-                                <div key={g.id} className="relative group">
-                                    <div className="flex justify-between text-xs mb-1">
-                                        <span className="text-white font-medium">{g.name}</span>
-                                        <span className="text-purple-300">{progress.toFixed(0)}%</span>
-                                    </div>
-                                    <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                                        <div className="h-full bg-gradient-to-r from-purple-600 to-indigo-500 transition-all duration-500" style={{width: `${progress}%`}}></div>
-                                    </div>
-                                    <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                                        <span>{currentSavings.toFixed(0)}€ act.</span>
-                                        <span>{g.target}€ obj.</span>
-                                    </div>
-                                    <button onClick={()=>deleteGoal(g.id)} className="absolute -right-2 -top-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="x" size={10}/></button>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
-             )
-        }
 
         // --- DASHBOARD ---
         const Dashboard = () => {
-            const { data, addTx, delTx, exportData } = useContext(AppContext);
-            const [form, setForm] = useState({ desc: '', amount: '', type: 'out', cat: 'needs' });
+            const { data, addItem, delItem, exportData } = useContext(AppContext);
+            const [form, setForm] = useState({ desc: '', amount: '', type: 'out', catId: 'food' });
             
             // Cálculos
             const income = data.txs.filter(t => t.type === 'in').reduce((acc, t) => acc + t.amount, 0);
             const expense = data.txs.filter(t => t.type === 'out').reduce((acc, t) => acc + t.amount, 0);
             const balance = income - expense;
 
-            // Gráfico
-            const cats = data.txs.filter(t => t.type === 'out').reduce((acc, t) => { acc[t.cat] = (acc[t.cat] || 0) + t.amount; return acc; }, {needs:0, wants:0, save:0});
-            const totalE = expense || 1;
-            const p1 = (cats.needs/totalE)*100;
-            const p2 = p1 + (cats.wants/totalE)*100;
-
             const submit = () => {
                 if(!form.desc || !form.amount) return;
-                addTx({ ...form, amount: parseFloat(form.amount) });
+                // Encontrar el emoji y label basados en el ID
+                const catInfo = CATS.find(c => c.id === form.catId) || CATS[7];
+                addItem('txs', { 
+                    ...form, 
+                    amount: parseFloat(form.amount),
+                    catIcon: catInfo.icon,
+                    catLabel: catInfo.label,
+                    catColor: catInfo.color
+                });
                 setForm({ ...form, desc: '', amount: '' });
             };
 
             return (
-                <div className="pb-32 max-w-2xl mx-auto min-h-screen">
-                    {/* NAV */}
-                    <nav className="p-6 flex justify-between items-center">
-                        <span className="text-xl font-bold tracking-tight">FamilyWealth</span>
-                        <button onClick={exportData} className="text-gray-400 hover:text-white p-2 bg-white/5 rounded-full" title="Exportar Backup"><Icon name="download-cloud" size={18}/></button>
+                <div className="pb-32 max-w-xl mx-auto min-h-screen">
+                    {/* Header */}
+                    <nav className="p-6 flex justify-between items-center sticky top-0 bg-black/80 backdrop-blur-md z-20 border-b border-white/5">
+                        <span className="text-lg font-bold">FamilyWealth</span>
+                        <button onClick={exportData} className="text-gray-400"><Icon name="cloud-download" size={20}/></button>
                     </nav>
 
-                    {/* BALANCE */}
-                    <div className="px-6 mb-8 text-center">
-                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Liquidez Disponible</p>
-                        <h1 className="text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-500">{balance.toFixed(2)}€</h1>
-                        <div className="flex justify-center gap-4 mt-4">
-                            <span className="badge bg-green-900/30 text-green-400 flex items-center gap-1"><Icon name="arrow-up" size={12}/> {income}€</span>
-                            <span className="badge bg-red-900/30 text-red-400 flex items-center gap-1"><Icon name="arrow-down" size={12}/> {expense}€</span>
+                    {/* Balance */}
+                    <div className="px-6 py-6 text-center">
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Disponible</p>
+                        <h1 className="text-5xl font-bold text-white mb-2">{balance.toFixed(2)}€</h1>
+                        <div className="flex justify-center gap-4 text-xs font-mono">
+                            <span className="text-green-500 bg-green-900/20 px-2 py-1 rounded">+{income}</span>
+                            <span className="text-red-500 bg-red-900/20 px-2 py-1 rounded">-{expense}</span>
                         </div>
                     </div>
 
-                    <div className="px-4">
-                        {/* INPUT RÁPIDO */}
-                        <div className="ios-card bg-gray-900/50 backdrop-blur-md">
-                            <div className="flex gap-2 mb-3">
-                                <button onClick={() => setForm({...form, type: 'in'})} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${form.type === 'in' ? 'bg-[#30D158] text-black' : 'bg-white/5 text-gray-400'}`}>INGRESO</button>
-                                <button onClick={() => setForm({...form, type: 'out'})} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${form.type === 'out' ? 'bg-[#FF453A] text-white' : 'bg-white/5 text-gray-400'}`}>GASTO</button>
+                    <div className="px-4 space-y-4">
+                        
+                        {/* INPUT PRINCIPAL (CON EMOJIS) */}
+                        <div className="ios-card bg-gray-900/80 backdrop-blur border-blue-500/20 border">
+                            <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
+                                <button onClick={() => setForm({...form, type: 'in'})} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${form.type === 'in' ? 'bg-green-600 text-white' : 'text-gray-500'}`}>INGRESO</button>
+                                <button onClick={() => setForm({...form, type: 'out'})} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${form.type === 'out' ? 'bg-red-600 text-white' : 'text-gray-500'}`}>GASTO</button>
                             </div>
-                            <div className="flex gap-3 mb-3">
-                                <input placeholder="Concepto (ej: Luz)" value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} className="ios-input flex-1" />
+
+                            <div className="flex gap-3 mb-4">
+                                <input placeholder="Concepto" value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} className="ios-input flex-1" />
                                 <input type="number" placeholder="0.00" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className="ios-input w-24 text-center" />
                             </div>
-                            {form.type === 'out' && (
-                                <div className="flex justify-between gap-2 mb-3">
-                                    {['needs', 'wants', 'save'].map(c => (
-                                        <button key={c} onClick={() => setForm({...form, cat: c})} className={`flex-1 py-1 rounded-md text-[10px] uppercase font-bold border ${form.cat === c ? 'border-blue-500 text-blue-400 bg-blue-500/10' : 'border-white/10 text-gray-500'}`}>
-                                            {c === 'needs' ? 'Necesidad' : c === 'wants' ? 'Capricho' : 'Inversión'}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                            <button onClick={submit} className="ios-btn w-full bg-white text-black hover:bg-gray-200">Añadir Movimiento</button>
-                        </div>
 
-                        {/* ANÁLISIS + METAS */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div className="ios-card flex flex-col items-center justify-center">
-                                <h3 className="text-xs uppercase font-bold text-gray-500 mb-4 w-full text-left">Distribución Gastos</h3>
-                                <div className="donut-chart" style={{'--p1': `${p1}%`, '--p2': `${p2}%`, '--p3': '100%'}}>
-                                    <div className="donut-hole">
-                                        <span className="text-2xl font-bold">{expense > 0 ? Math.round((cats.save/expense)*100) : 0}%</span>
-                                        <span className="text-[10px] text-gray-400">Tasa Ahorro</span>
+                            {/* SELECTOR EMOJIS (SOLO PARA GASTOS) */}
+                            {form.type === 'out' && (
+                                <div className="mb-4">
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">Categoría</p>
+                                    <div className="flex justify-between overflow-x-auto hide-scroll pb-2 gap-2">
+                                        {CATS.map(c => (
+                                            <button key={c.id} onClick={() => setForm({...form, catId: c.id})} className={`emoji-btn flex flex-col items-center gap-1 p-2 min-w-[50px] ${form.catId === c.id ? 'active' : ''}`}>
+                                                <span className="text-2xl">{c.icon}</span>
+                                                <span className="text-[9px] text-gray-400">{c.label}</span>
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
-                            </div>
-                            
-                            {/* NUEVO: COMPONENTE METAS */}
-                            <Goals />
+                            )}
+
+                            <button onClick={submit} className="ios-btn w-full bg-white text-black hover:bg-gray-200">
+                                Registrar Movimiento
+                            </button>
                         </div>
 
-                        {/* NUEVO: SIMULADOR MANUAL */}
-                        <LoanSimulator />
+                        {/* NUEVO: GESTOR DE SUSCRIPCIONES */}
+                        <SubscriptionManager />
 
-                        {/* LISTA MOVIMIENTOS */}
+                        {/* HISTORIAL */}
                         <div className="ios-card">
-                            <h3 className="text-xs uppercase font-bold text-gray-500 mb-4">Historial Reciente</h3>
+                            <h3 className="text-xs uppercase font-bold text-gray-500 mb-4">Actividad Reciente</h3>
                             <div className="space-y-4">
-                                {data.txs.slice(0, 10).map(t => (
-                                    <div key={t.id} className="flex justify-between items-center group">
+                                {data.txs.slice(0, 8).map(t => (
+                                    <div key={t.id} className="flex justify-between items-center group animate-enter">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${t.type === 'in' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                <Icon name={t.type === 'in' ? 'trending-up' : 'credit-card'} size={18} />
+                                            {/* Icono inteligente: Emoji si existe, flecha si no */}
+                                            <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-xl">
+                                                {t.type === 'in' ? '💰' : (t.catIcon || '💸')}
                                             </div>
                                             <div>
-                                                <p className="font-medium text-sm">{t.desc}</p>
-                                                <p className="text-[10px] text-gray-500 uppercase">{t.cat || 'Ingreso'}</p>
+                                                <p className="font-medium text-sm text-gray-200">{t.desc}</p>
+                                                <p className="text-[10px] text-gray-500 uppercase">{t.catLabel || 'General'}</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-3">
                                             <span className={`font-mono font-bold ${t.type === 'in' ? 'text-green-400' : 'text-white'}`}>
                                                 {t.type === 'in' ? '+' : '-'}{t.amount.toFixed(2)}€
                                             </span>
-                                            <button onClick={() => delTx(t.id)} className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="trash" size={14}/></button>
+                                            <button onClick={() => delItem('txs', t.id)} className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Icon name="x" size={14}/>
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
-                                {data.txs.length === 0 && <div className="text-center text-gray-600 text-sm py-4">Sin datos. Empieza añadiendo un ingreso.</div>}
+                                {data.txs.length === 0 && <p className="text-center text-gray-600 text-sm py-4">Todo tranquilo por aquí 🦗</p>}
                             </div>
                         </div>
+
                     </div>
                 </div>
             );
