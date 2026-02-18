@@ -2,409 +2,76 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FamilyWealth Architect</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FamilyWealth Diagnóstico</title>
     
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#050505">
-
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { background-color: #09090b; color: white; font-family: sans-serif; }
+    </style>
 
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        void: '#09090b',
-                        card: '#18181b',
-                        accent: '#8b5cf6',
-                        success: '#10b981',
-                        warning: '#f59e0b',
-                        danger: '#ef4444'
-                    },
-                    boxShadow: {
-                        'glow': '0 0 20px rgba(139, 92, 246, 0.15)',
-                    }
-                }
+        window.onerror = function(msg, url, line, col, error) {
+            const errorBox = document.getElementById('error-box');
+            if (errorBox) {
+                errorBox.style.display = 'block';
+                errorBox.innerHTML += `<p><strong>ERROR:</strong> ${msg}<br><small>Línea: ${line}</small></p>`;
             }
-        }
+            return false;
+        };
     </script>
-    <style>
-        body { background-color: #09090b; color: #e4e4e7; font-family: 'Segoe UI', system-ui, sans-serif; }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #09090b; }
-        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
-    </style>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
+
+    <div id="error-box" style="display:none; position:fixed; top:0; left:0; right:0; background:red; color:white; padding:20px; z-index:9999;">
+        Esperando a React...
+    </div>
+
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useContext, createContext, useMemo } = React;
-        const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } = Recharts;
-
-        // --- UTILS: ICONOS LUCIDE ---
-        const Icon = ({ name, size = 20, color = "currentColor" }) => {
-            useEffect(() => { lucide.createIcons(); }, [name]);
-            return <i data-lucide={name} style={{ width: size, height: size, color: color }}></i>;
-        };
-
-        // --- UTILS: LOGICA FINANCIERA ---
-        const calculateLoanSchedule = (principal, months, rate = 5.50) => {
-            const r = (rate / 100) / 12;
-            const monthlyPayment = principal * ((r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1));
+        try {
+            const { useState, useEffect } = React;
             
-            let balance = principal;
-            const schedule = [];
-            let totalInterest = 0;
+            // Componente Simple de Prueba
+            const App = () => {
+                const [count, setCount] = useState(0);
 
-            for (let i = 1; i <= Math.min(months, 12); i++) { // Solo mostramos primer año para no saturar
-                const interest = balance * r;
-                const capital = monthlyPayment - interest;
-                balance -= capital;
-                totalInterest += interest;
-                schedule.push({ month: i, interest, capital, balance });
-            }
+                useEffect(() => {
+                    // Intentar cargar iconos
+                    try { lucide.createIcons(); } catch(e) { console.warn("Lucide falló", e); }
+                }, []);
 
-            return { monthlyPayment, schedule, totalInterest };
-        };
-
-        const calculateHealthScore = (income, expenses, liquidity) => {
-            if (income === 0) return 0;
-            const savingsRate = ((income - expenses) / income) * 100;
-            const buffer = liquidity / (expenses || 1); // Meses de vida
-            
-            let score = 0;
-            if (savingsRate > 20) score += 40;
-            else if (savingsRate > 0) score += 20;
-            
-            if (buffer > 6) score += 40;
-            else if (buffer > 3) score += 20;
-            else if (buffer > 1) score += 10;
-            
-            score += 20; // Base por estar usando la app
-            return Math.min(100, score);
-        };
-
-        // --- CONTEXTO GLOBAL & SEGURIDAD ---
-        const FinancialContext = createContext();
-
-        const FinancialProvider = ({ children }) => {
-            const [user, setUser] = useState(null); // { key: 'password' }
-            const [data, setData] = useState({ incomes: [], expenses: [], budget: 0 });
-            const [isLocked, setIsLocked] = useState(true);
-
-            // Cargar datos
-            const login = (password) => {
-                try {
-                    const encrypted = localStorage.getItem('fw_data');
-                    if (!encrypted) {
-                        // Nuevo usuario
-                        const initialData = { incomes: [], expenses: [] };
-                        localStorage.setItem('fw_data', CryptoJS.AES.encrypt(JSON.stringify(initialData), password).toString());
-                        setUser({ key: password });
-                        setData(initialData);
-                        setIsLocked(false);
-                        return true;
-                    }
-                    
-                    const bytes = CryptoJS.AES.decrypt(encrypted, password);
-                    const decrypted = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-                    setUser({ key: password });
-                    setData(decrypted);
-                    setIsLocked(false);
-                    return true;
-                } catch (e) {
-                    return false;
-                }
+                return (
+                    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+                        <div className="bg-zinc-800 p-8 rounded-2xl border border-white/10 text-center max-w-md w-full">
+                            <i data-lucide="check-circle" className="w-16 h-16 text-green-500 mx-auto mb-4"></i>
+                            <h1 className="text-2xl font-bold mb-2">¡Funciona!</h1>
+                            <p className="text-gray-400 mb-6">Si ves esto, React está vivo. El problema anterior era seguramente un error de sintaxis o de carga.</p>
+                            
+                            <button 
+                                onClick={() => setCount(c => c + 1)}
+                                className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg font-bold transition-all"
+                            >
+                                He pulsado {count} veces
+                            </button>
+                        </div>
+                    </div>
+                );
             };
 
-            // Guardar datos (Efecto secundario al cambiar data)
-            useEffect(() => {
-                if (!isLocked && user) {
-                    const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), user.key).toString();
-                    localStorage.setItem('fw_data', encrypted);
-                }
-            }, [data, isLocked]);
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
 
-            const addTransaction = (type, item) => {
-                setData(prev => ({ ...prev, [type]: [...prev[type], { ...item, id: Date.now() }] }));
-            };
-
-            return (
-                <FinancialContext.Provider value={{ data, isLocked, login, addTransaction }}>
-                    {children}
-                </FinancialContext.Provider>
-            );
-        };
-
-        // --- COMPONENTES UI ---
-
-        // 1. LOGIN SCREEN
-        const SecurityGate = () => {
-            const { login } = useContext(FinancialContext);
-            const [pass, setPass] = useState('');
-            const [error, setError] = useState(false);
-
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                if (!login(pass)) setError(true);
-            };
-
-            return (
-                <div className="fixed inset-0 bg-void flex items-center justify-center p-4">
-                    <div className="bg-card border border-white/5 p-8 rounded-3xl w-full max-w-md text-center shadow-glow">
-                        <div className="mb-6 mx-auto w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center text-accent">
-                            <Icon name="shield-check" size={32} />
-                        </div>
-                        <h1 className="text-2xl font-bold mb-2">FamilyWealth</h1>
-                        <p className="text-gray-400 mb-6 text-sm">Bóveda Encriptada AES-256</p>
-                        <form onSubmit={handleSubmit}>
-                            <input 
-                                type="password" 
-                                value={pass}
-                                onChange={(e) => setPass(e.target.value)}
-                                className="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-center text-xl mb-4 focus:border-accent outline-none transition-all"
-                                placeholder="Clave Maestra"
-                            />
-                            {error && <p className="text-danger text-xs mb-4">Clave incorrecta</p>}
-                            <button className="w-full bg-accent hover:bg-violet-600 py-3 rounded-xl font-bold transition-all">Acceder</button>
-                        </form>
-                    </div>
-                </div>
-            );
-        };
-
-        // 2. DASHBOARD BENTO GRID
-        const Dashboard = () => {
-            const { data, addTransaction } = useContext(FinancialContext);
-            const [tab, setTab] = useState('overview');
-
-            // Cálculos
-            const totalIncome = data.incomes.reduce((acc, curr) => acc + curr.amount, 0);
-            const totalExpenses = data.expenses.reduce((acc, curr) => acc + curr.amount, 0);
-            const balance = totalIncome - totalExpenses;
-            const healthScore = calculateHealthScore(totalIncome, totalExpenses, balance);
-
-            // Regla 50/30/20
-            const expensesByType = data.expenses.reduce((acc, curr) => {
-                acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
-                return acc;
-            }, { needs: 0, wants: 0, savings: 0 });
-
-            // Datos para Gráficos
-            const chartData = [
-                { name: 'Necesidades', value: expensesByType.needs, color: '#ef4444' },
-                { name: 'Caprichos', value: expensesByType.wants, color: '#f59e0b' },
-                { name: 'Ahorro', value: expensesByType.savings, color: '#10b981' },
-            ].filter(d => d.value > 0);
-
-            // Estado formulario
-            const [newItem, setNewItem] = useState({ desc: '', amount: '', type: 'expenses', category: 'needs' });
-
-            const handleAdd = () => {
-                if (!newItem.desc || !newItem.amount) return;
-                addTransaction(newItem.type, { 
-                    description: newItem.desc, 
-                    amount: parseFloat(newItem.amount), 
-                    category: newItem.category 
-                });
-                setNewItem({ ...newItem, desc: '', amount: '' });
-            };
-
-            return (
-                <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24">
-                    <header className="flex justify-between items-center mb-8">
-                        <div>
-                            <h2 className="text-3xl font-bold tracking-tight">Resumen Financiero</h2>
-                            <p className="text-gray-500 text-sm flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span> Sistema Seguro Activo
-                            </p>
-                        </div>
-                        <div className="bg-card border border-white/10 px-4 py-2 rounded-full flex gap-2 items-center">
-                            <span className="text-gray-400 text-xs">Health Score</span>
-                            <span className={`font-bold ${healthScore > 80 ? 'text-success' : 'text-warning'}`}>{Math.round(healthScore)}/100</span>
-                        </div>
-                    </header>
-
-                    {/* BENTO GRID */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        
-                        {/* BALANCE CARD (Grande) */}
-                        <div className="md:col-span-2 bg-card border border-white/5 rounded-3xl p-6 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-32 bg-accent/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-accent/20 transition-all"></div>
-                            <h3 className="text-gray-400 text-sm font-medium mb-2">Liquidez Total</h3>
-                            <div className="text-5xl font-bold tracking-tighter mb-4">{balance.toFixed(2)}€</div>
-                            <div className="flex gap-4">
-                                <div className="px-3 py-1 bg-success/10 text-success rounded-lg text-xs flex items-center gap-1">
-                                    <Icon name="trending-up" size={14} /> +{totalIncome}€ Ingresos
-                                </div>
-                                <div className="px-3 py-1 bg-danger/10 text-danger rounded-lg text-xs flex items-center gap-1">
-                                    <Icon name="trending-down" size={14} /> -{totalExpenses}€ Gastos
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* REGLA 50/30/20 (Visualizador) */}
-                        <div className="bg-card border border-white/5 rounded-3xl p-6 flex flex-col justify-between">
-                            <h3 className="text-gray-400 text-sm font-medium">Regla 50/30/20</h3>
-                            <div className="h-40 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie data={chartData} innerRadius={40} outerRadius={60} paddingAngle={5} dataKey="value">
-                                            {chartData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip contentStyle={{background: '#18181b', border: 'none', borderRadius: '8px'}}/>
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div>
-                            <div className="flex justify-between text-xs text-gray-500">
-                                <span className="text-danger">Need</span>
-                                <span className="text-warning">Want</span>
-                                <span className="text-success">Save</span>
-                            </div>
-                        </div>
-
-                        {/* INPUT RÁPIDO */}
-                        <div className="bg-card border border-white/5 rounded-3xl p-6">
-                            <h3 className="text-gray-400 text-sm font-medium mb-4">Añadir Movimiento</h3>
-                            <div className="space-y-3">
-                                <div className="flex gap-2">
-                                    <button onClick={() => setNewItem({...newItem, type: 'incomes'})} className={`flex-1 text-xs py-2 rounded-lg ${newItem.type === 'incomes' ? 'bg-success text-black' : 'bg-white/5'}`}>Ingreso</button>
-                                    <button onClick={() => setNewItem({...newItem, type: 'expenses'})} className={`flex-1 text-xs py-2 rounded-lg ${newItem.type === 'expenses' ? 'bg-danger text-white' : 'bg-white/5'}`}>Gasto</button>
-                                </div>
-                                <input placeholder="Concepto..." value={newItem.desc} onChange={e => setNewItem({...newItem, desc: e.target.value})} className="w-full bg-black/40 rounded-lg p-2 text-sm border border-white/10 outline-none focus:border-accent" />
-                                <div className="flex gap-2">
-                                    <input type="number" placeholder="€" value={newItem.amount} onChange={e => setNewItem({...newItem, amount: e.target.value})} className="w-24 bg-black/40 rounded-lg p-2 text-sm border border-white/10 outline-none focus:border-accent" />
-                                    {newItem.type === 'expenses' && (
-                                        <select onChange={e => setNewItem({...newItem, category: e.target.value})} className="flex-1 bg-black/40 rounded-lg p-2 text-xs border border-white/10 outline-none">
-                                            <option value="needs">Necesidad</option>
-                                            <option value="wants">Capricho</option>
-                                            <option value="savings">Ahorro</option>
-                                        </select>
-                                    )}
-                                    <button onClick={handleAdd} className="bg-accent rounded-lg px-3 flex items-center justify-center"><Icon name="plus" size={18}/></button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* LISTA DE TRANSACCIONES (Scrollable) */}
-                        <div className="md:col-span-2 lg:col-span-2 bg-card border border-white/5 rounded-3xl p-6 h-64 overflow-hidden flex flex-col">
-                            <h3 className="text-gray-400 text-sm font-medium mb-4">Últimos Movimientos</h3>
-                            <div className="overflow-y-auto pr-2 space-y-2 flex-1">
-                                {[...data.incomes.map(i => ({...i, t: 'inc'})), ...data.expenses.map(i => ({...i, t: 'exp'}))]
-                                    .sort((a,b) => b.id - a.id)
-                                    .map(item => (
-                                    <div key={item.id} className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${item.t === 'inc' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
-                                                <Icon name={item.t === 'inc' ? 'arrow-up' : 'arrow-down'} size={14} />
-                                            </div>
-                                            <span className="text-sm font-medium">{item.description}</span>
-                                        </div>
-                                        <span className={`font-mono font-bold ${item.t === 'inc' ? 'text-success' : 'text-white'}`}>
-                                            {item.t === 'inc' ? '+' : '-'}{item.amount}€
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* SIMULADOR ING PRO */}
-                        <div className="md:col-span-2 bg-gradient-to-br from-card to-[#0d0d10] border border-white/5 rounded-3xl p-6">
-                             <LoanSimulator />
-                        </div>
-
-                    </div>
-                </div>
-            );
-        };
-
-        const LoanSimulator = () => {
-            const [amount, setAmount] = useState(15000);
-            const [months, setMonths] = useState(24);
-            
-            const { monthlyPayment, schedule, totalInterest } = useMemo(() => calculateLoanSchedule(amount, months), [amount, months]);
-
-            return (
-                <div className="flex flex-col h-full">
-                    <div className="flex justify-between items-start mb-6">
-                        <div>
-                            <h3 className="text-orange-500 font-bold flex items-center gap-2"><Icon name="calculator" size={16} /> Simulador ING Pro</h3>
-                            <p className="text-xs text-gray-500">Tasa fija 5.50% TIN</p>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-2xl font-bold">{monthlyPayment.toFixed(2)}€<span className="text-xs text-gray-500 font-normal">/mes</span></div>
-                            <div className="text-xs text-red-400">Total Intereses: {totalInterest.toFixed(2)}€</div>
-                        </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div>
-                            <label className="text-xs text-gray-500 block mb-1">Solicitado</label>
-                            <input type="range" min="1000" max="60000" step="1000" value={amount} onChange={e => setAmount(Number(e.target.value))} className="w-full accent-orange-500 h-2 bg-gray-700 rounded-lg appearance-none" />
-                            <div className="text-sm font-mono mt-1">{amount}€</div>
-                        </div>
-                        <div>
-                            <label className="text-xs text-gray-500 block mb-1">Plazo (Meses)</label>
-                            <input type="range" min="12" max="84" step="6" value={months} onChange={e => setMonths(Number(e.target.value))} className="w-full accent-orange-500 h-2 bg-gray-700 rounded-lg appearance-none" />
-                            <div className="text-sm font-mono mt-1">{months} meses</div>
-                        </div>
-                    </div>
-
-                    {/* Tabla de amortización mini */}
-                    <div className="bg-black/30 rounded-xl p-4 flex-1">
-                        <table className="w-full text-xs text-gray-400">
-                            <thead>
-                                <tr className="border-b border-white/10 text-left">
-                                    <th className="pb-2">Mes</th>
-                                    <th className="pb-2">Interés</th>
-                                    <th className="pb-2">Capital</th>
-                                    <th className="pb-2 text-right">Pendiente</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {schedule.slice(0, 5).map(row => (
-                                    <tr key={row.month} className="border-b border-white/5 last:border-0">
-                                        <td className="py-2">{row.month}</td>
-                                        <td className="text-red-400">{row.interest.toFixed(2)}</td>
-                                        <td className="text-green-400">{row.capital.toFixed(2)}</td>
-                                        <td className="text-right text-white">{row.balance.toFixed(2)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {months > 5 && <div className="text-center text-xs text-gray-600 mt-2">... y {months - 5} cuotas más</div>}
-                    </div>
-                </div>
-            );
+        } catch (err) {
+            document.getElementById('error-box').style.display = 'block';
+            document.getElementById('error-box').innerHTML = "CRITICAL JS ERROR: " + err.message;
         }
-
-        // --- APP ROOT ---
-        const App = () => {
-            const { isLocked } = useContext(FinancialContext);
-            return (
-                <div className="min-h-screen">
-                    {isLocked ? <SecurityGate /> : <Dashboard />}
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(
-            <FinancialProvider>
-                <App />
-            </FinancialProvider>
-        );
     </script>
 </body>
 </html>
