@@ -4,26 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FamilyWealth | Cyber OS</title>
-    
-    <script>
-        window.onerror = function(message, source, lineno, colno, error) {
-            document.body.innerHTML += `
-                <div style="position:fixed; top:0; left:0; width:100%; background:red; color:white; padding:20px; z-index:9999;">
-                    <h3>🚨 Error Crítico:</h3>
-                    <p>${message}</p>
-                    <p>Línea: ${lineno}</p>
-                </div>
-            `;
-        };
-    </script>
+    <meta name="theme-color" content="#09090B">
+    <link rel="manifest" href="manifest.json">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <script>
@@ -34,7 +21,6 @@
                     colors: {
                         bg: '#09090B',
                         surface: '#18181B',
-                        surfaceHighlight: '#27272A',
                         primary: '#7C3AED',
                         neon: '#A78BFA',
                     },
@@ -51,261 +37,243 @@
     </script>
 
     <style>
-        body { background-color: #050505; color: #E4E4E7; overflow-x: hidden; }
+        body { background-color: #050505; color: #E4E4E7; -webkit-font-smoothing: antialiased; }
+        
+        /* Luz Ambiental de Fondo */
         .ambient-light {
             position: fixed; top: -20%; left: 50%; transform: translateX(-50%);
             width: 120vw; height: 60vh;
             background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, rgba(9, 9, 11, 0) 70%);
             z-index: -1; pointer-events: none;
         }
+
+        /* Estilo Tarjetas Glassmorphism */
         .cyber-card {
             background: rgba(24, 24, 27, 0.65);
             backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 16px;
         }
+
+        /* Inputs */
         .cyber-input {
             background: #0f0f12; border: 1px solid #27272A; color: white; border-radius: 12px;
-            transition: all 0.3s; outline: none;
+            width: 100%; padding: 12px; outline: none; transition: all 0.3s;
         }
         .cyber-input:focus { border-color: #7C3AED; box-shadow: 0 0 15px -3px rgba(124, 58, 237, 0.4); }
-        
-        /* Animaciones */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-in { animation: fadeIn 0.5s ease-out forwards; }
+
+        /* Utilidades */
+        .hidden-tab { display: none; }
+        .active-nav { background-color: #7C3AED; color: white; box-shadow: 0 0 20px -5px rgba(124, 58, 237, 0.5); }
+        .inactive-nav { color: #71717A; }
     </style>
 </head>
 <body>
 
     <div class="ambient-light"></div>
-    <div id="root"></div>
 
-    <script type="text/babel" data-presets="env,react">
-        const { useState, useEffect, useMemo } = React;
-
-        // --- COMPONENTE DE ICONO SEGURO ---
-        // Usamos este método para evitar errores si Lucide no carga a tiempo
-        const Icon = ({ name, size = 20, className = "" }) => {
-            useEffect(() => {
-                if (window.lucide) {
-                    window.lucide.createIcons();
-                }
-            }, [name]);
-            
-            return <i data-lucide={name} width={size} height={size} className={className}></i>;
-        };
-
-        const Card = ({ children, className = "" }) => (
-            <div className={`cyber-card p-6 ${className} animate-in`}>
-                {children}
+    <div class="max-w-xl mx-auto min-h-screen flex flex-col p-4 pb-24">
+        
+        <header class="flex justify-between items-center mb-6 py-2">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-neon">
+                    <i data-lucide="hexagon" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none text-white">FamilyWealth</h1>
+                    <p class="text-[10px] text-violet-400 font-mono uppercase tracking-widest">Cyber OS</p>
+                </div>
             </div>
-        );
+            <div class="w-8 h-8 rounded-full bg-zinc-800 border border-white/20 overflow-hidden">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User">
+            </div>
+        </header>
 
-        const Button = ({ children, onClick, variant = 'primary', className = "" }) => {
-            const baseStyle = "px-5 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95";
-            const variants = {
-                primary: "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-neon",
-                ghost: "bg-transparent hover:bg-white/5 text-zinc-400 hover:text-white"
-            };
-            return <button onClick={onClick} className={`${baseStyle} ${variants[variant]} ${className}`}>{children}</button>;
-        };
+        <main id="view-dashboard">
+            
+            <div class="cyber-card relative overflow-hidden text-center py-10">
+                <div class="absolute top-0 right-0 opacity-10 p-4"><i data-lucide="activity" width="100" height="100"></i></div>
+                <h3 class="text-zinc-500 text-xs uppercase tracking-widest mb-2 font-bold">Patrimonio Neto</h3>
+                <h1 class="text-5xl font-bold text-white mb-4 tracking-tighter">148.250€</h1>
+                <div class="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 px-3 py-1 rounded-full text-green-400 text-xs font-bold">
+                    <i data-lucide="trending-up" width="14"></i> +4.2% este mes
+                </div>
+            </div>
 
-        // --- SISTEMA FINANCIERO ---
-        const useFinanceSystem = () => {
-            const [assets] = useState([
-                { id: 1, name: "Cuenta Principal", type: "Efectivo", amount: 12450.00, icon: "wallet" },
-                { id: 2, name: "Bitcoin", type: "Crypto", amount: 35000.00, icon: "bitcoin" },
-                { id: 3, name: "Inmuebles", type: "Activo", amount: 180000.00, icon: "home" }
-            ]);
-
-            const [goals] = useState([
-                { id: 1, name: "Tesla Model 3", target: 45000, current: 12000, color: "bg-blue-500" },
-                { id: 2, name: "Japón", target: 5000, current: 1500, color: "bg-pink-500" }
-            ]);
-
-            const netWorth = assets.reduce((acc, item) => acc + item.amount, 0);
-
-            // Calculadora Hipotecaria Pura JS
-            const calculateMortgage = (principal, annualRate, years) => {
-                const p = parseFloat(principal);
-                const r = parseFloat(annualRate) / 100 / 12;
-                const n = parseFloat(years) * 12;
-                if (r === 0) return { monthly: p/n, total: p, schedule: [] };
+            <div class="cyber-card">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-white flex items-center gap-2"><i data-lucide="pie-chart" width="18"></i> Activos</h3>
+                    <button class="text-violet-400 text-xs font-bold">+ Añadir</button>
+                </div>
                 
-                const monthlyPayment = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-                
-                // Generar tabla reducida para gráfico
-                let balance = p;
-                let schedule = [];
-                for (let i = 1; i <= n; i++) {
-                    balance -= (monthlyPayment - (balance * r));
-                    if (i % 12 === 0) schedule.push({ year: i/12, balance: Math.max(0, balance) });
-                }
-                return { monthly: monthlyPayment, total: monthlyPayment * n, schedule };
-            };
-
-            return { assets, goals, netWorth, calculateMortgage };
-        };
-
-        // --- VISTA: DASHBOARD ---
-        const DashboardView = ({ finance }) => {
-            return (
-                <div className="space-y-6 pb-24">
-                    {/* PATRIMONIO */}
-                    <Card className="text-center py-10 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 opacity-10"><Icon name="activity" size={150} /></div>
-                        <h3 className="text-zinc-500 text-sm uppercase tracking-widest mb-2">Patrimonio Neto</h3>
-                        <h1 className="text-5xl md:text-6xl font-bold text-white mb-2">
-                            {finance.netWorth.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-                        </h1>
-                        <span className="bg-green-500/10 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-500/20">
-                            +4.2% este mes
-                        </span>
-                    </Card>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* ACTIVOS */}
-                        <Card>
-                            <h3 className="text-white font-bold mb-4 flex gap-2"><Icon name="pie-chart" /> Activos</h3>
-                            <div className="space-y-3">
-                                {finance.assets.map(a => (
-                                    <div key={a.id} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
-                                        <div className="flex items-center gap-3">
-                                            <div className="text-violet-400"><Icon name={a.icon} /></div>
-                                            <div>
-                                                <p className="text-sm font-medium text-white">{a.name}</p>
-                                                <p className="text-[10px] text-zinc-500 uppercase">{a.type}</p>
-                                            </div>
-                                        </div>
-                                        <span className="font-mono font-bold text-sm">{a.amount.toLocaleString()}€</span>
-                                    </div>
-                                ))}
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-zinc-900 rounded-lg text-violet-400"><i data-lucide="wallet" width="18"></i></div>
+                            <div>
+                                <p class="text-sm font-medium text-white">Cuenta Principal</p>
+                                <p class="text-[10px] text-zinc-500 uppercase">Efectivo</p>
                             </div>
-                        </Card>
-
-                        {/* METAS */}
-                        <Card>
-                            <h3 className="text-white font-bold mb-4 flex gap-2"><Icon name="target" /> Metas</h3>
-                            <div className="space-y-6">
-                                {finance.goals.map(g => (
-                                    <div key={g.id}>
-                                        <div className="flex justify-between text-xs mb-1 text-zinc-400">
-                                            <span>{g.name}</span>
-                                            <span>{Math.round((g.current/g.target)*100)}%</span>
-                                        </div>
-                                        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                                            <div style={{width: `${(g.current/g.target)*100}%`}} className={`h-full ${g.color}`}></div>
-                                        </div>
-                                    </div>
-                                ))}
+                        </div>
+                        <span class="font-mono text-sm font-bold text-white">12.450€</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-zinc-900 rounded-lg text-orange-400"><i data-lucide="bitcoin" width="18"></i></div>
+                            <div>
+                                <p class="text-sm font-medium text-white">Bitcoin</p>
+                                <p class="text-[10px] text-zinc-500 uppercase">Crypto</p>
                             </div>
-                        </Card>
+                        </div>
+                        <span class="font-mono text-sm font-bold text-white">35.000€</span>
                     </div>
                 </div>
-            );
-        };
+            </div>
 
-        // --- VISTA: SIMULADOR ---
-        const SimulatorView = ({ finance }) => {
-            const [val, setVal] = useState({ amount: 200000, years: 30, rate: 3.5 });
-            const result = finance.calculateMortgage(val.amount, val.rate, val.years);
-
-            return (
-                <div className="pb-24">
-                    <Card className="mb-6">
-                        <h2 className="text-xl font-bold text-violet-400 mb-6 flex gap-2"><Icon name="calculator" /> Simulador AI</h2>
-                        
-                        <div className="space-y-4 mb-8">
-                            <div>
-                                <label className="text-xs text-zinc-500 uppercase">Préstamo (€)</label>
-                                <input type="number" value={val.amount} onChange={e=>setVal({...val, amount:e.target.value})} 
-                                    className="cyber-input w-full p-3 text-xl font-bold" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs text-zinc-500 uppercase">Años</label>
-                                    <input type="number" value={val.years} onChange={e=>setVal({...val, years:e.target.value})} 
-                                        className="cyber-input w-full p-3 text-center" />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-zinc-500 uppercase">Interés %</label>
-                                    <input type="number" value={val.rate} step="0.1" onChange={e=>setVal({...val, rate:e.target.value})} 
-                                        className="cyber-input w-full p-3 text-center text-violet-400 border-violet-500/30" />
-                                </div>
-                            </div>
+            <div class="cyber-card">
+                <h3 class="font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="target" width="18"></i> Metas</h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1 text-zinc-400">
+                            <span>Tesla Model 3</span>
+                            <span class="text-white font-mono">12k / 45k</span>
                         </div>
-
-                        <div className="bg-violet-500/10 border border-violet-500/20 p-4 rounded-xl text-center">
-                            <p className="text-xs text-zinc-400">Cuota Mensual</p>
-                            <p className="text-4xl font-bold text-white font-mono">{result.monthly.toFixed(2)}€</p>
+                        <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-blue-500 to-cyan-500 w-[26%]"></div>
                         </div>
-                    </Card>
-
-                    <Card>
-                        <h3 className="text-xs font-bold text-zinc-500 uppercase mb-4">Amortización (Visual)</h3>
-                        <div className="flex items-end h-32 gap-1 pb-2 border-b border-white/10">
-                            {result.schedule.map((point, i) => (
-                                <div key={i} style={{height: `${(point.balance / val.amount) * 100}%`}} 
-                                     className="flex-1 bg-zinc-700 hover:bg-violet-500 transition-colors rounded-t-sm"></div>
-                            ))}
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1 text-zinc-400">
+                            <span>Viaje Japón</span>
+                            <span class="text-white font-mono">1.5k / 5k</span>
                         </div>
-                        <div className="flex justify-between text-[10px] text-zinc-500 mt-2">
-                            <span>Año 0</span>
-                            <span>Año {val.years}</span>
+                        <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-pink-500 to-rose-500 w-[30%]"></div>
                         </div>
-                    </Card>
+                    </div>
                 </div>
-            );
-        };
+            </div>
+        </main>
 
-        // --- APP PRINCIPAL ---
-        const App = () => {
-            const finance = useFinanceSystem();
-            const [view, setView] = useState('dashboard');
+        <main id="view-simulator" class="hidden-tab">
+            <div class="cyber-card">
+                <h2 class="text-xl font-bold mb-6 flex items-center gap-2 text-violet-400">
+                    <i data-lucide="calculator"></i> Simulador Hipoteca
+                </h2>
 
-            // Efecto para recargar iconos cuando cambia la vista
-            useEffect(() => {
-                if(window.lucide) window.lucide.createIcons();
-            }, [view]);
-
-            return (
-                <div className="max-w-3xl mx-auto p-6 min-h-screen flex flex-col">
-                    
-                    {/* HEADER */}
-                    <header className="flex justify-between items-center mb-8 sticky top-0 z-50 py-4 bg-black/80 backdrop-blur-md -mx-6 px-6 border-b border-white/5">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-neon">
-                                <Icon name="hexagon" />
-                            </div>
-                            <div>
-                                <h1 className="font-bold text-lg leading-none">FamilyWealth</h1>
-                                <p className="text-[10px] text-violet-400 font-mono uppercase">Cyber OS</p>
-                            </div>
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="text-xs text-zinc-500 uppercase font-bold">Monto Préstamo (€)</label>
+                        <input type="number" id="sim-amount" value="250000" class="cyber-input text-xl font-mono font-bold">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-zinc-500 uppercase font-bold">Años</label>
+                            <input type="number" id="sim-years" value="30" class="cyber-input text-center">
                         </div>
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/20"></div>
-                    </header>
-
-                    {/* CONTENIDO */}
-                    <main className="flex-1">
-                        {view === 'dashboard' ? <DashboardView finance={finance} /> : <SimulatorView finance={finance} />}
-                    </main>
-
-                    {/* NAVEGACIÓN INFERIOR (Dock style) */}
-                    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900/90 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex gap-2 shadow-2xl z-50">
-                        <button onClick={()=>setView('dashboard')} className={`p-3 rounded-xl transition-all ${view==='dashboard' ? 'bg-violet-600 text-white shadow-neon' : 'text-zinc-500 hover:text-white'}`}>
-                            <Icon name="layout-grid" />
-                        </button>
-                        <button onClick={()=>setView('simulator')} className={`p-3 rounded-xl transition-all ${view==='simulator' ? 'bg-violet-600 text-white shadow-neon' : 'text-zinc-500 hover:text-white'}`}>
-                            <Icon name="calculator" />
-                        </button>
-                    </nav>
-
+                        <div>
+                            <label class="text-xs text-zinc-500 uppercase font-bold">Interés %</label>
+                            <input type="number" id="sim-rate" value="3.5" step="0.1" class="cyber-input text-center text-violet-400 border-violet-500/30">
+                        </div>
+                    </div>
                 </div>
-            );
-        };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+                <div class="bg-violet-500/10 border border-violet-500/20 p-4 rounded-xl text-center mb-6">
+                    <p class="text-xs text-zinc-400 mb-1">Cuota Mensual Estimada</p>
+                    <p class="text-4xl font-bold text-white font-mono" id="sim-result">0.00€</p>
+                </div>
+
+                <div class="h-32 flex items-end gap-1 border-b border-white/10 pb-1" id="sim-chart">
+                    </div>
+                <div class="flex justify-between text-[10px] text-zinc-500 mt-2">
+                    <span>Inicio</span>
+                    <span>Final</span>
+                </div>
+            </div>
+        </main>
+
+        <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900/90 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex gap-2 shadow-2xl z-50">
+            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="p-3 rounded-xl transition-all active-nav">
+                <i data-lucide="layout-grid"></i>
+            </button>
+            <button onclick="switchTab('simulator')" id="btn-simulator" class="p-3 rounded-xl transition-all inactive-nav hover:text-white">
+                <i data-lucide="calculator"></i>
+            </button>
+        </nav>
+
+    </div>
+
+    <script>
+        // 1. Inicializar Iconos
+        lucide.createIcons();
+
+        // 2. Lógica de Navegación (Tabs)
+        function switchTab(tabName) {
+            // Ocultar todo
+            document.getElementById('view-dashboard').classList.add('hidden-tab');
+            document.getElementById('view-simulator').classList.add('hidden-tab');
+            
+            // Desactivar botones
+            document.getElementById('btn-dashboard').className = "p-3 rounded-xl transition-all inactive-nav hover:text-white";
+            document.getElementById('btn-simulator').className = "p-3 rounded-xl transition-all inactive-nav hover:text-white";
+
+            // Mostrar el seleccionado
+            document.getElementById('view-' + tabName).classList.remove('hidden-tab');
+            document.getElementById('btn-' + tabName).className = "p-3 rounded-xl transition-all active-nav";
+        }
+
+        // 3. Lógica del Simulador (Matemáticas)
+        const inputs = ['sim-amount', 'sim-years', 'sim-rate'];
+        inputs.forEach(id => {
+            document.getElementById(id).addEventListener('input', calculateMortgage);
+        });
+
+        function calculateMortgage() {
+            const amount = parseFloat(document.getElementById('sim-amount').value) || 0;
+            const years = parseFloat(document.getElementById('sim-years').value) || 0;
+            const rate = parseFloat(document.getElementById('sim-rate').value) || 0;
+
+            const r = rate / 100 / 12;
+            const n = years * 12;
+            
+            let monthly = 0;
+            if (r > 0 && n > 0) {
+                monthly = (amount * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+            }
+
+            // Actualizar Texto
+            document.getElementById('sim-result').innerText = monthly.toFixed(2) + '€';
+
+            // Actualizar Gráfico Visual
+            const chartContainer = document.getElementById('sim-chart');
+            chartContainer.innerHTML = ''; // Limpiar
+            
+            let balance = amount;
+            // Generar 20 barras para visualizar
+            const steps = 20;
+            const stepSize = n / steps;
+            
+            for(let i=0; i<steps; i++) {
+                // Cálculo simplificado para el gráfico
+                const progress = i / steps;
+                const h = (1 - progress) * 100; 
+                
+                const bar = document.createElement('div');
+                bar.className = 'flex-1 bg-zinc-700 rounded-t-sm hover:bg-violet-500 transition-colors';
+                bar.style.height = h + '%';
+                chartContainer.appendChild(bar);
+            }
+        }
+
+        // Calcular al inicio
+        calculateMortgage();
+
+        // Service Worker (Para que sea PWA instalable)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
+        }
     </script>
 </body>
 </html>
