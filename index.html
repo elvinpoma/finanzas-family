@@ -3,388 +3,325 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FamilyWealth Pro</title>
-    
+    <title>FamilyWealth</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#09090b">
+    <meta name="theme-color" content="#000000">
 
+    <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://unpkg.com/recharts@2.12.0/umd/Recharts.js"></script>
 
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        background: '#09090b',
-                        surface: '#18181b',
-                        surfaceHighlight: '#27272a',
-                        primary: '#8b5cf6', // Violeta
-                        secondary: '#ec4899', // Rosa
-                        success: '#10b981',
-                        warning: '#f59e0b',
-                        danger: '#ef4444',
-                    },
-                    fontFamily: {
-                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        bg: '#000000',
+                        card: '#1C1C1E',
+                        primary: '#0A84FF', // iOS Blue
+                        success: '#30D158', // iOS Green
+                        danger: '#FF453A',  // iOS Red
+                        warning: '#FF9F0A', // iOS Orange
                     }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #09090b; color: #f4f4f5; -webkit-font-smoothing: antialiased; }
-        .glass { background: rgba(24, 24, 27, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
-        .bento-card { @apply bg-surface border border-white/5 rounded-3xl p-6 transition-all hover:border-white/10; }
-        /* Scrollbar oculta pero funcional */
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        body { background-color: #000; color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .ios-card { background: #1C1C1E; border-radius: 18px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        .ios-input { background: #2C2C2E; border: none; border-radius: 10px; padding: 12px; color: white; width: 100%; outline: none; }
+        .ios-btn { border-radius: 12px; font-weight: 600; padding: 14px; transition: opacity 0.2s; }
+        .ios-btn:active { opacity: 0.7; }
+        
+        /* Gráfico Donut CSS Puro - Indestructible */
+        .pie-chart {
+            width: 140px; height: 140px; border-radius: 50%;
+            background: conic-gradient(var(--c1, #FF453A) var(--p1, 0%), var(--c2, #FF9F0A) 0 var(--p2, 0%), var(--c3, #30D158) 0 var(--p3, 100%));
+            position: relative; margin: 0 auto;
+        }
+        .pie-hole {
+            position: absolute; top: 20px; left: 20px; width: 100px; height: 100px;
+            background: #1C1C1E; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 20px;
+        }
+
+        /* Pantalla de carga manual */
+        #loading-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
+    
+    <div id="loading-screen">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-white mx-auto mb-4"></div>
+            <p class="text-gray-400 text-sm">Cargando Bóveda...</p>
+        </div>
+    </div>
+
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, createContext, useContext } = React;
-        // Importación segura de Recharts
-        const { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } = Recharts;
 
-        // --- COMPONENTE DE ICONOS SEGURO ---
-        const Icon = ({ name, size = 20, className = "" }) => {
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            }, [name]);
-            return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
+        // --- SISTEMA DE ICONOS ---
+        const Icon = ({ name, size = 20, color = "white" }) => {
+            useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, [name]);
+            return <i data-lucide={name} style={{ width: size, height: size, color: color }}></i>;
         };
 
-        // --- ERROR BOUNDARY (Para que no salga pantalla negra) ---
-        class ErrorBoundary extends React.Component {
-            constructor(props) { super(props); this.state = { hasError: false, error: null }; }
-            static getDerivedStateFromError(error) { return { hasError: true, error }; }
-            render() {
-                if (this.state.hasError) {
-                    return (
-                        <div className="p-8 text-red-400 bg-background h-screen flex flex-col items-center justify-center text-center">
-                            <h1 className="text-2xl font-bold mb-4">Algo salió mal 😔</h1>
-                            <pre className="bg-black/50 p-4 rounded text-xs text-left overflow-auto max-w-lg">
-                                {this.state.error.toString()}
-                            </pre>
-                            <button onClick={() => window.location.reload()} className="mt-6 bg-white/10 px-4 py-2 rounded-full text-white">Recargar página</button>
-                        </div>
-                    );
-                }
-                return this.props.children;
-            }
-        }
+        // --- CONTEXTO (BASE DE DATOS) ---
+        const AppContext = createContext();
 
-        // --- CONTEXTO FINANCIERO (LÓGICA) ---
-        const FinancialContext = createContext();
+        const AppProvider = ({ children }) => {
+            const [user, setUser] = useState(null);
+            const [txs, setTxs] = useState([]); // Transacciones
 
-        const FinancialProvider = ({ children }) => {
-            const [isAuthenticated, setIsAuthenticated] = useState(false);
-            const [key, setKey] = useState(null);
-            const [transactions, setTransactions] = useState([]);
-            
-            // Cargar datos
-            const unlock = (password) => {
+            // Login / Cargar
+            const login = (password) => {
                 try {
-                    const encrypted = localStorage.getItem('familyWealth_db');
+                    const encrypted = localStorage.getItem('family_db_v2');
                     if (!encrypted) {
-                        // Nuevo usuario
-                        setKey(password);
-                        setTransactions([]);
-                        setIsAuthenticated(true);
-                        saveData([], password);
+                        setUser(password);
+                        setTxs([]);
+                        save([], password);
                         return true;
                     }
                     const bytes = CryptoJS.AES.decrypt(encrypted, password);
-                    const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-                    setKey(password);
-                    setTransactions(decryptedData);
-                    setIsAuthenticated(true);
+                    const data = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+                    setUser(password);
+                    setTxs(data);
                     return true;
                 } catch (e) {
-                    console.error("Clave incorrecta", e);
                     return false;
                 }
             };
 
-            const saveData = (newData, currentKey = key) => {
-                if (!currentKey) return;
-                const encrypted = CryptoJS.AES.encrypt(JSON.stringify(newData), currentKey).toString();
-                localStorage.setItem('familyWealth_db', encrypted);
+            const save = (data, key = user) => {
+                const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), key).toString();
+                localStorage.setItem('family_db_v2', encrypted);
             };
 
-            const addTransaction = (t) => {
-                const updated = [{ ...t, id: Date.now() }, ...transactions];
-                setTransactions(updated);
-                saveData(updated);
+            const addTx = (tx) => {
+                const newTxs = [{ ...tx, id: Date.now() }, ...txs];
+                setTxs(newTxs);
+                save(newTxs);
             };
 
-            const deleteTransaction = (id) => {
-                const updated = transactions.filter(t => t.id !== id);
-                setTransactions(updated);
-                saveData(updated);
+            const delTx = (id) => {
+                const newTxs = txs.filter(t => t.id !== id);
+                setTxs(newTxs);
+                save(newTxs);
             };
 
             return (
-                <FinancialContext.Provider value={{ isAuthenticated, unlock, transactions, addTransaction, deleteTransaction }}>
+                <AppContext.Provider value={{ user, login, txs, addTx, delTx }}>
                     {children}
-                </FinancialContext.Provider>
+                </AppContext.Provider>
             );
         };
 
-        // --- LOGIN SCREEN ---
-        const Login = () => {
-            const { unlock } = useContext(FinancialContext);
+        // --- VISTA 1: LOGIN ---
+        const LoginScreen = () => {
+            const { login } = useContext(AppContext);
             const [pass, setPass] = useState('');
             const [err, setErr] = useState('');
 
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                if (pass.length < 4) return setErr("Mínimo 4 caracteres");
-                if (!unlock(pass)) setErr("Contraseña incorrecta");
+            const handleLogin = () => {
+                if(pass.length < 4) return setErr("Mínimo 4 caracteres");
+                if(!login(pass)) setErr("Contraseña incorrecta");
             };
 
             return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-background">
-                    <div className="w-full max-w-sm glass p-8 rounded-[32px] shadow-2xl shadow-primary/10 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary"></div>
-                        <div className="mb-8 flex justify-center">
-                            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary rotate-3">
-                                <Icon name="fingerprint" size={32} />
-                            </div>
-                        </div>
-                        <h1 className="text-3xl font-bold text-center mb-2">FamilyWealth</h1>
-                        <p className="text-gray-500 text-center text-sm mb-8">Bóveda Privada Local AES-256</p>
-                        
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="relative group">
-                                <input 
-                                    type="password" 
-                                    value={pass}
-                                    onChange={e => {setPass(e.target.value); setErr('')}}
-                                    className="w-full bg-surfaceHighlight border border-transparent focus:border-primary rounded-xl px-4 py-4 text-center text-lg outline-none transition-all placeholder-gray-600"
-                                    placeholder="Clave de Acceso"
-                                />
-                                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary to-secondary opacity-0 group-hover:opacity-10 pointer-events-none transition-opacity"></div>
-                            </div>
-                            {err && <p className="text-danger text-center text-xs">{err}</p>}
-                            <button className="w-full bg-white text-black font-bold py-4 rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all">
-                                Desbloquear Bóveda
-                            </button>
-                        </form>
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-black">
+                    <div className="w-20 h-20 bg-gray-900 rounded-3xl flex items-center justify-center mb-6 border border-gray-800">
+                        <Icon name="lock" size={32} color="#0A84FF" />
+                    </div>
+                    <h1 className="text-3xl font-bold mb-2">FamilyWealth</h1>
+                    <p className="text-gray-500 mb-8">Bóveda Privada Local</p>
+                    
+                    <div className="w-full max-w-sm space-y-4">
+                        <input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Clave Maestra" className="ios-input text-center text-xl" />
+                        {err && <p className="text-red-500 text-sm text-center">{err}</p>}
+                        <button onClick={handleLogin} className="ios-btn bg-primary text-white w-full">Entrar</button>
                     </div>
                 </div>
             );
         };
 
-        // --- DASHBOARD PRINCIPAL ---
+        // --- VISTA 2: DASHBOARD ---
         const Dashboard = () => {
-            const { transactions, addTransaction, deleteTransaction } = useContext(FinancialContext);
-            const [form, setForm] = useState({ desc: '', amount: '', type: 'expense', category: 'wants' });
-
-            // CÁLCULOS FINANCIEROS
-            const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-            const expense = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
-            const balance = income - expense;
-            const savingsRate = income > 0 ? ((income - expense) / income) * 100 : 0;
+            const { txs, addTx, delTx } = useContext(AppContext);
+            const [tab, setTab] = useState('resumen');
             
-            // Health Score (0-100)
-            const healthScore = Math.min(100, Math.max(0, (savingsRate * 1.5) + (balance > 1000 ? 20 : 0) + 10));
+            // Cálculos
+            const totalIngresos = txs.filter(t => t.type === 'in').reduce((acc, t) => acc + t.amount, 0);
+            const totalGastos = txs.filter(t => t.type === 'out').reduce((acc, t) => acc + t.amount, 0);
+            const balance = totalIngresos - totalGastos;
 
-            // Regla 50/30/20 Data
-            const expensesByCat = transactions.filter(t => t.type === 'expense').reduce((acc, t) => {
-                acc[t.category] = (acc[t.category] || 0) + t.amount;
+            // Datos para Gráfico CSS
+            const gastosCat = txs.filter(t => t.type === 'out').reduce((acc, t) => {
+                acc[t.cat] = (acc[t.cat] || 0) + t.amount;
                 return acc;
-            }, { needs: 0, wants: 0, savings: 0 }); // Savings aquí serían gastos de inversión/ahorro manual
+            }, { needs: 0, wants: 0, save: 0 });
+            
+            // Porcentajes para el gráfico Conic
+            const totalG = totalGastos || 1;
+            const p1 = (gastosCat.needs / totalG) * 100; // Necesidades (Rojo)
+            const p2 = p1 + (gastosCat.wants / totalG) * 100; // Caprichos (Naranja)
+            // El resto es Ahorro (Verde)
 
-            // Chart Data
-            const pieData = [
-                { name: 'Necesidades', value: expensesByCat.needs, color: '#ef4444' }, // Rojo
-                { name: 'Caprichos', value: expensesByCat.wants, color: '#f59e0b' },  // Naranja
-                { name: 'Ahorro/Libre', value: Math.max(0, income - expense), color: '#10b981' } // Verde
-            ].filter(d => d.value > 0);
+            return (
+                <div className="pb-24 max-w-2xl mx-auto">
+                    {/* HEADER */}
+                    <div className="pt-10 pb-6 px-6 sticky top-0 bg-black/80 backdrop-blur-md z-10 border-b border-white/5">
+                        <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-1">Patrimonio Neto</p>
+                        <h1 className="text-5xl font-bold">{balance.toFixed(2)}€</h1>
+                    </div>
 
-            const handleAdd = () => {
-                if (!form.desc || !form.amount) return;
-                addTransaction({ ...form, amount: parseFloat(form.amount) });
+                    <div className="p-4 space-y-4">
+                        
+                        {/* 1. GRÁFICO GASTOS (CSS PURO) */}
+                        <div className="ios-card flex items-center justify-between">
+                            <div>
+                                <h3 className="font-bold mb-4">Regla 50/30/20</h3>
+                                <div className="space-y-2 text-xs">
+                                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-danger"></div> Necesidades ({Math.round((gastosCat.needs/totalG)*100)}%)</div>
+                                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-warning"></div> Caprichos ({Math.round((gastosCat.wants/totalG)*100)}%)</div>
+                                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-success"></div> Ahorro ({Math.round((gastosCat.save/totalG)*100)}%)</div>
+                                </div>
+                            </div>
+                            <div className="pie-chart" style={{
+                                '--p1': `${p1}%`, 
+                                '--p2': `${p2}%`, 
+                                '--p3': '100%'
+                            }}>
+                                <div className="pie-hole">
+                                    <Icon name="pie-chart" size={24} color="#555" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 2. AÑADIR RÁPIDO */}
+                        <AddTransactionForm onAdd={addTx} />
+
+                        {/* 3. SIMULADOR PRÉSTAMO */}
+                        <LoanSimulator />
+
+                        {/* 4. LISTA DE MOVIMIENTOS */}
+                        <div className="ios-card">
+                            <h3 className="font-bold mb-4 text-gray-400 text-sm">Últimos Movimientos</h3>
+                            {txs.length === 0 ? <p className="text-center text-gray-600 text-sm py-4">Sin datos aún</p> : 
+                            <div className="space-y-3">
+                                {txs.slice(0, 10).map(t => (
+                                    <div key={t.id} className="flex justify-between items-center border-b border-white/5 pb-2 last:border-0">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${t.type === 'in' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                                                <Icon name={t.type === 'in' ? 'arrow-up' : 'arrow-down'} size={14} color={t.type === 'in' ? '#30D158' : '#FF453A'} />
+                                            </div>
+                                            <div>
+                                                <div className="font-medium text-sm">{t.desc}</div>
+                                                <div className="text-[10px] text-gray-500 uppercase">{t.cat}</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className={t.type === 'in' ? 'text-green-500' : 'text-white'}>
+                                                {t.type === 'in' ? '+' : '-'}{t.amount}€
+                                            </span>
+                                            <button onClick={() => delTx(t.id)} className="text-gray-600"><Icon name="trash-2" size={14}/></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- COMPONENTES AUXILIARES ---
+        const AddTransactionForm = ({ onAdd }) => {
+            const [form, setForm] = useState({ desc: '', amount: '', type: 'out', cat: 'needs' });
+            
+            const submit = () => {
+                if(!form.desc || !form.amount) return;
+                onAdd({ ...form, amount: parseFloat(form.amount) });
                 setForm({ ...form, desc: '', amount: '' });
             };
 
             return (
-                <div className="min-h-screen pb-24 p-4 md:p-8 max-w-7xl mx-auto">
-                    {/* Header */}
-                    <header className="flex justify-between items-end mb-8">
-                        <div>
-                            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Tu Patrimonio</h2>
-                            <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500">{balance.toFixed(2)}€</h1>
-                        </div>
-                        <div className="flex flex-col items-end">
-                            <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${healthScore > 70 ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}`}>
-                                <Icon name="activity" size={14} /> Score: {Math.round(healthScore)}
-                            </div>
-                            <span className="text-xs text-gray-600 mt-1">Ahorro: {savingsRate.toFixed(1)}%</span>
-                        </div>
-                    </header>
-
-                    {/* BENTO GRID */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                        
-                        {/* 1. INPUT RÁPIDO */}
-                        <div className="bento-card col-span-1 md:col-span-2 flex flex-col justify-center">
-                            <h3 className="text-gray-400 text-xs uppercase font-bold mb-4 flex items-center gap-2"><Icon name="plus-circle" size={16}/> Nuevo Movimiento</h3>
-                            <div className="flex flex-col md:flex-row gap-3">
-                                <div className="flex bg-surfaceHighlight rounded-xl p-1 shrink-0">
-                                    <button onClick={() => setForm({...form, type: 'income'})} className={`px-4 py-2 rounded-lg text-sm transition-all ${form.type === 'income' ? 'bg-success text-black font-bold' : 'text-gray-400 hover:text-white'}`}>Ingreso</button>
-                                    <button onClick={() => setForm({...form, type: 'expense'})} className={`px-4 py-2 rounded-lg text-sm transition-all ${form.type === 'expense' ? 'bg-danger text-white font-bold' : 'text-gray-400 hover:text-white'}`}>Gasto</button>
-                                </div>
-                                <input placeholder="Concepto (ej: Nómina)" value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} className="flex-1 bg-surfaceHighlight rounded-xl px-4 py-3 outline-none focus:ring-2 ring-primary/50 transition-all" />
-                                <input type="number" placeholder="0.00" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className="w-24 bg-surfaceHighlight rounded-xl px-4 py-3 outline-none focus:ring-2 ring-primary/50" />
-                            </div>
-                            {form.type === 'expense' && (
-                                <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
-                                    {['needs', 'wants', 'savings'].map(cat => (
-                                        <button key={cat} onClick={() => setForm({...form, category: cat})} className={`px-3 py-1 rounded-full text-xs border ${form.category === cat ? 'border-primary text-primary bg-primary/10' : 'border-white/10 text-gray-500'}`}>
-                                            {cat === 'needs' ? 'Necesidad' : cat === 'wants' ? 'Capricho' : 'Inversión'}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                            <button onClick={handleAdd} className="mt-4 bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
-                                <Icon name="check" size={18} /> Registrar
-                            </button>
-                        </div>
-
-                        {/* 2. REGLA 50/30/20 (Gráfico) */}
-                        <div className="bento-card relative overflow-hidden flex flex-col items-center justify-center">
-                            <h3 className="absolute top-6 left-6 text-gray-400 text-xs uppercase font-bold">Análisis 50/30/20</h3>
-                            <div className="w-40 h-40 relative z-10">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie data={pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
-                                            {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                                        </Pie>
-                                        <Tooltip contentStyle={{background: '#18181b', borderRadius: '12px', border: 'none'}} itemStyle={{color: '#fff'}} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <Icon name="pie-chart" size={24} className="text-gray-600" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 3. SIMULADOR DE PRÉSTAMO (Interactivo) */}
-                        <LoanSimulator />
-
-                        {/* 4. HISTORIAL (Scroll) */}
-                        <div className="bento-card col-span-1 md:col-span-2 h-[300px] flex flex-col">
-                            <h3 className="text-gray-400 text-xs uppercase font-bold mb-4 flex justify-between">
-                                <span>Últimos Movimientos</span>
-                                <span className="text-primary">{transactions.length} regs</span>
-                            </h3>
-                            <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-                                {transactions.length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center text-gray-600 opacity-50">
-                                        <Icon name="wind" size={32} />
-                                        <span className="text-xs mt-2">Nada por aquí aún...</span>
-                                    </div>
-                                ) : transactions.map(t => (
-                                    <div key={t.id} className="group flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${t.type === 'income' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
-                                                <Icon name={t.type === 'income' ? 'arrow-up-right' : 'arrow-down-left'} size={16} />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-200">{t.desc}</p>
-                                                <p className="text-[10px] text-gray-500 uppercase">{t.category || 'Ingreso'}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <span className={`font-mono font-bold ${t.type === 'income' ? 'text-success' : 'text-gray-300'}`}>
-                                                {t.type === 'income' ? '+' : '-'}{t.amount.toFixed(2)}€
-                                            </span>
-                                            <button onClick={() => deleteTransaction(t.id)} className="text-gray-600 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Icon name="trash-2" size={16} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                <div className="ios-card space-y-3">
+                    <div className="flex gap-2 bg-gray-800 p-1 rounded-lg">
+                        <button onClick={() => setForm({...form, type: 'in'})} className={`flex-1 py-1 text-sm rounded-md ${form.type === 'in' ? 'bg-green-600 text-white' : 'text-gray-400'}`}>Ingreso</button>
+                        <button onClick={() => setForm({...form, type: 'out'})} className={`flex-1 py-1 text-sm rounded-md ${form.type === 'out' ? 'bg-red-600 text-white' : 'text-gray-400'}`}>Gasto</button>
                     </div>
+                    <div className="flex gap-2">
+                        <input placeholder="Concepto" value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} className="ios-input flex-1" />
+                        <input type="number" placeholder="€" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className="ios-input w-24 text-center" />
+                    </div>
+                    {form.type === 'out' && (
+                        <div className="flex justify-between text-xs pt-1">
+                            {['needs', 'wants', 'save'].map(c => (
+                                <label key={c} className={`cursor-pointer px-3 py-1 rounded-full border ${form.cat === c ? 'border-primary bg-primary/20 text-white' : 'border-gray-700 text-gray-500'}`}>
+                                    <input type="radio" name="cat" className="hidden" onClick={() => setForm({...form, cat: c})} />
+                                    {c === 'needs' ? 'Necesidad' : c === 'wants' ? 'Capricho' : 'Ahorro'}
+                                </label>
+                            ))}
+                        </div>
+                    )}
+                    <button onClick={submit} className="w-full bg-white/10 hover:bg-white/20 py-3 rounded-xl text-sm font-bold mt-2">Registrar</button>
                 </div>
             );
         };
 
-        // --- SIMULADOR LOAN (Componente separado) ---
         const LoanSimulator = () => {
-            const [amount, setAmount] = useState(15000);
+            const [val, setVal] = useState(15000);
             const [months, setMonths] = useState(24);
-
-            const result = useMemo(() => {
-                const r = (5.50 / 100) / 12;
-                const payment = amount * ((r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1));
-                const total = payment * months;
-                return { payment, total };
-            }, [amount, months]);
+            // Cálculo ING Directo
+            const r = (5.50 / 100) / 12;
+            const cuota = val * ((r * Math.pow(1+r, months)) / (Math.pow(1+r, months) - 1));
 
             return (
-                <div className="bento-card bg-gradient-to-br from-surface to-surfaceHighlight">
-                    <h3 className="text-orange-400 text-xs uppercase font-bold mb-4 flex items-center gap-2">
-                        <Icon name="calculator" size={14}/> Simulador ING (5.5%)
-                    </h3>
-                    
-                    <div className="mb-6 text-center">
-                        <span className="text-3xl font-bold text-white block">{result.payment.toFixed(2)}€</span>
-                        <span className="text-xs text-gray-500">Cuota Mensual</span>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div>
-                            <div className="flex justify-between text-xs text-gray-400 mb-1">
-                                <span>Importe</span>
-                                <span>{amount}€</span>
-                            </div>
-                            <input type="range" min="1000" max="50000" step="500" value={amount} onChange={e => setAmount(Number(e.target.value))} className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-orange-500" />
-                        </div>
-                        <div>
-                            <div className="flex justify-between text-xs text-gray-400 mb-1">
-                                <span>Plazo</span>
-                                <span>{months} meses</span>
-                            </div>
-                            <input type="range" min="12" max="96" step="6" value={months} onChange={e => setMonths(Number(e.target.value))} className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-orange-500" />
+                <div className="ios-card bg-gray-900 border-orange-500/30 border">
+                    <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-orange-500 font-bold flex items-center gap-2"><Icon name="calculator" size={16} color="#F97316"/> Simulador</h3>
+                        <div className="text-right">
+                            <div className="text-2xl font-bold text-white">{cuota.toFixed(2)}€</div>
+                            <div className="text-[10px] text-gray-400">mensual</div>
                         </div>
                     </div>
-                    
-                    <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center text-xs">
-                        <span className="text-gray-500">Interés Total</span>
-                        <span className="text-orange-400 font-bold">+{(result.total - amount).toFixed(2)}€</span>
+                    <input type="range" min="1000" max="50000" step="1000" value={val} onChange={e => setVal(Number(e.target.value))} className="w-full mb-2 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" />
+                    <div className="flex justify-between text-xs text-gray-500 mb-4">
+                        <span>{val}€</span>
+                        <span>Solicitado</span>
+                    </div>
+                    <input type="range" min="12" max="84" step="6" value={months} onChange={e => setMonths(Number(e.target.value))} className="w-full mb-2 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" />
+                    <div className="flex justify-between text-xs text-gray-500">
+                        <span>{months} meses</span>
+                        <span>Plazo</span>
                     </div>
                 </div>
             );
         };
 
-        // --- APP ROOT ---
+        // --- INICIAR APP ---
         const App = () => {
-            const { isAuthenticated } = useContext(FinancialContext);
-            return isAuthenticated ? <Dashboard /> : <Login />;
+            const { user } = useContext(AppContext);
+            
+            // Eliminar pantalla de carga cuando React monta
+            useEffect(() => {
+                const loader = document.getElementById('loading-screen');
+                if(loader) loader.style.display = 'none';
+            }, []);
+
+            return user ? <Dashboard /> : <LoginScreen />;
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(
-            <ErrorBoundary>
-                <FinancialProvider>
-                    <App />
-                </FinancialProvider>
-            </ErrorBoundary>
-        );
+        root.render(<AppProvider><App /></AppProvider>);
     </script>
 </body>
 </html>
