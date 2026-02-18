@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FamilyWealth Ultimate Pro</title>
+    <title>FamilyWealth Platinum</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
 
@@ -40,6 +40,19 @@
         /* Animaciones */
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .animate-enter { animation: slideUp 0.4s ease-out forwards; }
+
+        /* Estilo del Gráfico Donut */
+        .donut-chart {
+            width: 160px; height: 160px; border-radius: 50%;
+            position: relative; margin: 0 auto;
+            transition: background 0.5s ease;
+        }
+        .donut-hole {
+            width: 110px; height: 110px; background: #1C1C1E; border-radius: 50%;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
 <body>
@@ -48,16 +61,16 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, createContext, useContext, useRef } = React;
 
-        // --- CONSTANTES ---
+        // --- CONSTANTES (Con Hex para el gráfico) ---
         const CATS = [
-            { id: 'home', icon: '🏠', label: 'Casa', color: 'text-blue-400' },
-            { id: 'food', icon: '🍔', label: 'Comida', color: 'text-orange-400' },
-            { id: 'transport', icon: '🚗', label: 'Auto', color: 'text-red-400' },
-            { id: 'shop', icon: '🛍️', label: 'Compras', color: 'text-pink-400' },
-            { id: 'fun', icon: '🎉', label: 'Ocio', color: 'text-purple-400' },
-            { id: 'health', icon: '💊', label: 'Salud', color: 'text-green-400' },
-            { id: 'bills', icon: '📄', label: 'Factura', color: 'text-yellow-400' },
-            { id: 'misc', icon: '📦', label: 'Otros', color: 'text-gray-400' }
+            { id: 'home', icon: '🏠', label: 'Casa', color: 'text-blue-400', hex: '#60A5FA' },
+            { id: 'food', icon: '🍔', label: 'Comida', color: 'text-orange-400', hex: '#FB923C' },
+            { id: 'transport', icon: '🚗', label: 'Auto', color: 'text-red-400', hex: '#F87171' },
+            { id: 'shop', icon: '🛍️', label: 'Compras', color: 'text-pink-400', hex: '#F472B6' },
+            { id: 'fun', icon: '🎉', label: 'Ocio', color: 'text-purple-400', hex: '#C084FC' },
+            { id: 'health', icon: '💊', label: 'Salud', color: 'text-green-400', hex: '#4ADE80' },
+            { id: 'bills', icon: '📄', label: 'Factura', color: 'text-yellow-400', hex: '#FACC15' },
+            { id: 'misc', icon: '📦', label: 'Otros', color: 'text-gray-400', hex: '#9CA3AF' }
         ];
 
         const Icon = ({ name, size = 18, className="" }) => {
@@ -74,7 +87,7 @@
 
             const login = (password) => {
                 try {
-                    const encrypted = localStorage.getItem('fw_ultimate_pro_db');
+                    const encrypted = localStorage.getItem('fw_platinum_db');
                     if (!encrypted) {
                         const initial = { txs: [], subs: [], goals: [] };
                         setUser({ key: password }); setData(initial); save(initial, password);
@@ -83,7 +96,6 @@
                     const bytes = CryptoJS.AES.decrypt(encrypted, password);
                     const decrypted = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
                     
-                    // Migración segura
                     if(!decrypted.subs) decrypted.subs = [];
                     if(!decrypted.goals) decrypted.goals = [];
                     
@@ -95,7 +107,7 @@
             const save = (newData, key = user?.key) => {
                 if(!key) return;
                 const encrypted = CryptoJS.AES.encrypt(JSON.stringify(newData), key).toString();
-                localStorage.setItem('fw_ultimate_pro_db', encrypted);
+                localStorage.setItem('fw_platinum_db', encrypted);
             };
 
             const addItem = (type, item) => {
@@ -106,13 +118,7 @@
                 const updated = { ...data, [type]: data[type].filter(i => i.id !== id) };
                 setData(updated); save(updated);
             };
-            const updateItem = (type, updatedItem) => {
-                const updatedList = data[type].map(i => i.id === updatedItem.id ? updatedItem : i);
-                const updated = { ...data, [type]: updatedList };
-                setData(updated); save(updated);
-            };
 
-            // FUNCIONES DE ARCHIVOS
             const exportData = () => {
                 const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
                 const url = URL.createObjectURL(blob);
@@ -127,40 +133,95 @@
                     try {
                         const json = JSON.parse(e.target.result);
                         if(json.txs) {
-                            setData(json); save(json); alert("✅ Datos cargados correctamente");
-                        } else { alert("⚠️ Archivo incorrecto"); }
-                    } catch (err) { alert("❌ Error al leer archivo"); }
+                            setData(json); save(json); alert("✅ Importado con éxito");
+                        } else { alert("⚠️ Archivo no válido"); }
+                    } catch (err) { alert("❌ Error de lectura"); }
                 };
                 reader.readAsText(file);
             };
 
             return (
-                <AppContext.Provider value={{ user, login, data, addItem, delItem, updateItem, exportData, importData }}>
+                <AppContext.Provider value={{ user, login, data, addItem, delItem, exportData, importData }}>
                     {children}
                 </AppContext.Provider>
             );
         };
 
-        // --- LOGIN ---
-        const Login = () => {
-            const { login } = useContext(AppContext);
-            const [pass, setPass] = useState('');
-            const [err, setErr] = useState('');
+        // --- COMPONENTE: GRÁFICO (NUEVO) ---
+        const ExpenseChart = () => {
+            const { data } = useContext(AppContext);
+            
+            // 1. Filtrar gastos
+            const expenses = data.txs.filter(t => t.type === 'out');
+            const totalExpense = expenses.reduce((acc, t) => acc + t.amount, 0);
+
+            // 2. Si no hay gastos, mostrar placeholder
+            if (totalExpense === 0) return null;
+
+            // 3. Agrupar por categoría
+            const grouped = {};
+            expenses.forEach(t => {
+                if(!grouped[t.catId]) grouped[t.catId] = 0;
+                grouped[t.catId] += t.amount;
+            });
+
+            // 4. Crear segmentos para el gradiente cónico
+            let gradientString = "";
+            let currentPercent = 0;
+            const sortedCats = Object.keys(grouped).sort((a,b) => grouped[b] - grouped[a]); // Ordenar mayor a menor
+            
+            // Datos para la leyenda
+            const legendData = [];
+
+            sortedCats.forEach((catId, index) => {
+                const amount = grouped[catId];
+                const percent = (amount / totalExpense) * 100;
+                const catInfo = CATS.find(c => c.id === catId) || CATS[7];
+                const endPercent = currentPercent + percent;
+                
+                // Construir string CSS: #color start% end%,
+                gradientString += `${catInfo.hex} ${currentPercent}% ${endPercent}%, `;
+                
+                currentPercent += percent;
+                legendData.push({ ...catInfo, amount, percent });
+            });
+
+            // Quitar última coma y espacio
+            gradientString = gradientString.slice(0, -2);
+
             return (
-                <div className="h-screen flex flex-col items-center justify-center bg-black p-6">
-                    <div className="w-20 h-20 bg-gray-900 rounded-3xl flex items-center justify-center mb-6 border border-gray-800 shadow-[0_0_30px_rgba(10,132,255,0.2)]">
-                        <Icon name="wallet" size={36} className="text-blue-500" />
+                <div className="ios-card bg-gray-900 border border-gray-800 animate-enter">
+                    <h3 className="text-xs uppercase font-bold text-gray-500 mb-6 flex items-center gap-2">
+                        <Icon name="pie-chart" size={14}/> Distribución de Gastos
+                    </h3>
+                    
+                    <div className="flex flex-col items-center">
+                        {/* El Donut CSS */}
+                        <div className="donut-chart" style={{ background: `conic-gradient(${gradientString})` }}>
+                            <div className="donut-hole">
+                                <span className="text-[10px] text-gray-400 uppercase">Total</span>
+                                <span className="text-xl font-bold text-white">{totalExpense.toFixed(0)}€</span>
+                            </div>
+                        </div>
+
+                        {/* Leyenda */}
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-6 w-full px-2">
+                            {legendData.map(l => (
+                                <div key={l.id} className="flex justify-between items-center text-xs">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full" style={{background: l.hex}}></div>
+                                        <span className="text-gray-300">{l.label}</span>
+                                    </div>
+                                    <span className="font-mono text-gray-500">{Math.round(l.percent)}%</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <h1 className="text-2xl font-bold mb-1 silver-text">FamilyWealth</h1>
-                    <p className="text-gray-500 text-sm mb-8">Ultimate Pro</p>
-                    <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Clave de Acceso" className="ios-input text-center text-xl mb-4 max-w-xs" />
-                    <button onClick={() => pass.length > 3 ? (!login(pass) && setErr('Error')) : setErr('Mínimo 4')} className="ios-btn bg-blue-600 text-white w-full max-w-xs">Entrar</button>
-                    {err && <p className="text-red-500 mt-4 text-xs">{err}</p>}
                 </div>
             );
         };
 
-        // --- COMPONENTE: AHORRO (GOALS) ---
+        // --- COMPONENTE: AHORRO ---
         const SavingsGoals = () => {
             const { data, addItem, delItem } = useContext(AppContext);
             const [form, setForm] = useState({ name: '', target: '', current: '' });
@@ -168,53 +229,41 @@
 
             const handleAdd = () => {
                 if(!form.name || !form.target) return;
-                addItem('goals', { 
-                    name: form.name, 
-                    target: parseFloat(form.target), 
-                    current: parseFloat(form.current) || 0 
-                });
+                addItem('goals', { name: form.name, target: parseFloat(form.target), current: parseFloat(form.current) || 0 });
                 setForm({name:'', target:'', current:''}); setIsOpen(false);
             };
 
             return (
                 <div className="ios-card bg-gray-900 border border-yellow-500/30">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-yellow-500 font-bold flex items-center gap-2"><Icon name="piggy-bank" size={16}/> Metas Ahorro</h3>
-                        <button onClick={()=>setIsOpen(!isOpen)} className="text-yellow-500 bg-yellow-500/10 p-2 rounded-lg text-xs font-bold">
-                            {isOpen ? 'Cerrar' : '+ Crear'}
-                        </button>
+                        <h3 className="text-yellow-500 font-bold flex items-center gap-2"><Icon name="piggy-bank" size={16}/> Metas</h3>
+                        <button onClick={()=>setIsOpen(!isOpen)} className="text-yellow-500 bg-yellow-500/10 p-2 rounded-lg text-[10px] font-bold">{isOpen ? 'Cerrar' : '+ Crear'}</button>
                     </div>
-
                     {isOpen && (
                         <div className="bg-black/40 p-3 rounded-xl mb-4 animate-enter border border-white/10">
-                            <input placeholder="Nombre Meta (ej: Viaje)" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="ios-input text-xs mb-2"/>
+                            <input placeholder="Nombre (ej: Viaje)" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="ios-input text-xs mb-2"/>
                             <div className="flex gap-2">
                                 <input type="number" placeholder="Objetivo €" value={form.target} onChange={e=>setForm({...form, target:e.target.value})} className="ios-input text-xs"/>
-                                <input type="number" placeholder="Ya tengo €" value={form.current} onChange={e=>setForm({...form, current:e.target.value})} className="ios-input text-xs"/>
+                                <input type="number" placeholder="Actual €" value={form.current} onChange={e=>setForm({...form, current:e.target.value})} className="ios-input text-xs"/>
                             </div>
-                            <button onClick={handleAdd} className="w-full mt-2 bg-yellow-600 text-black font-bold text-xs py-2 rounded-lg">Guardar Meta</button>
+                            <button onClick={handleAdd} className="w-full mt-2 bg-yellow-600 text-black font-bold text-xs py-2 rounded-lg">Guardar</button>
                         </div>
                     )}
-
                     <div className="space-y-4">
-                        {data.goals.map(g => {
-                            const percent = Math.min(100, (g.current / g.target) * 100);
-                            return (
-                                <div key={g.id} className="group">
-                                    <div className="flex justify-between text-xs mb-1 text-gray-300">
-                                        <span>{g.name}</span>
-                                        <div className="flex gap-2">
-                                            <span className="font-bold text-white">{g.current}€ / {g.target}€</span>
-                                            <button onClick={()=>delItem('goals', g.id)} className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="x" size={12}/></button>
-                                        </div>
-                                    </div>
-                                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                                        <div style={{width: `${percent}%`}} className="bg-gradient-to-r from-yellow-600 to-yellow-400 h-full rounded-full transition-all duration-500"></div>
+                        {data.goals.map(g => (
+                            <div key={g.id} className="group">
+                                <div className="flex justify-between text-xs mb-1 text-gray-300">
+                                    <span>{g.name}</span>
+                                    <div className="flex gap-2">
+                                        <span className="font-bold text-white">{g.current} / {g.target}€</span>
+                                        <button onClick={()=>delItem('goals', g.id)} className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="x" size={12}/></button>
                                     </div>
                                 </div>
-                            )
-                        })}
-                        {data.goals.length === 0 && <p className="text-[10px] text-gray-500 text-center">Sin metas activas</p>}
+                                <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div style={{width: `${Math.min(100, (g.current/g.target)*100)}%`}} className="bg-gradient-to-r from-yellow-600 to-yellow-400 h-full rounded-full"></div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             );
@@ -236,12 +285,8 @@
             return (
                 <div className="ios-card bg-gray-900 border border-purple-500/20">
                     <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 className="text-purple-400 font-bold flex items-center gap-2"><Icon name="zap" size={16}/> Gastos Fijos</h3>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-white font-bold">{totalMonthly.toFixed(2)}€/mes</div>
-                        </div>
+                        <h3 className="text-purple-400 font-bold flex items-center gap-2"><Icon name="zap" size={16}/> Fijos</h3>
+                        <div className="text-white font-bold">{totalMonthly.toFixed(2)}€/mes</div>
                     </div>
                     {!isOpen ? (
                         <button onClick={()=>setIsOpen(true)} className="w-full py-2 bg-white/5 rounded-xl text-xs text-gray-400 hover:text-white mb-4">+ Añadir</button>
@@ -267,7 +312,7 @@
             );
         };
 
-        // --- COMPONENTE: SIMULADOR (CON INTERÉS MANUAL) ---
+        // --- COMPONENTE: SIMULADOR ---
         const SmartSimulator = () => {
             const [amount, setAmount] = useState(15000);
             const [months, setMonths] = useState(48);
@@ -294,8 +339,6 @@
             return (
                 <div className="ios-card bg-gray-900 border border-orange-500/30">
                     <h3 className="text-orange-500 font-bold mb-4 flex gap-2 items-center"><Icon name="calculator" size={16}/> Simulador</h3>
-                    
-                    {/* Botones Rápidos */}
                     <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
                         {Object.entries(presets).map(([k, v]) => (
                             <button key={k} onClick={() => setPreset(k)} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all flex flex-col items-center gap-1 ${type === k ? 'bg-orange-500 text-white' : 'text-gray-500 hover:bg-white/5'}`}>
@@ -303,7 +346,6 @@
                             </button>
                         ))}
                     </div>
-
                     <div className="grid grid-cols-2 gap-3 mb-4">
                         <div>
                             <label className="text-[9px] text-gray-400 uppercase font-bold">Solicito (€)</label>
@@ -314,21 +356,17 @@
                             <input type="number" value={months} onChange={e=>setMonths(Number(e.target.value))} className="ios-input text-center font-bold text-sm py-2"/>
                         </div>
                     </div>
-
-                    {/* INPUT DE INTERÉS MANUAL */}
                     <div className="mb-4">
-                        <label className="text-[9px] text-gray-400 uppercase font-bold">Interés Anual (%)</label>
+                        <label className="text-[9px] text-gray-400 uppercase font-bold">Interés (%)</label>
                         <div className="flex items-center gap-2">
                              <input type="number" value={rate} onChange={e=>{setRate(Number(e.target.value)); setType('custom');}} className="ios-input text-center font-bold text-sm py-2 text-orange-400 border-orange-500/20"/>
-                             <span className="text-xs text-gray-500">{type === 'custom' ? '(Manual)' : '(Auto)'}</span>
+                             <span className="text-xs text-gray-500">{type === 'custom' ? 'Manual' : 'Auto'}</span>
                         </div>
                     </div>
-
                     <div className="bg-black/40 p-3 rounded-xl text-center mb-2 border border-white/5">
                         <p className="text-[10px] text-gray-400 mb-1">Cuota Mensual</p>
                         <p className="text-2xl font-bold text-white">{cuota.toFixed(2)}€</p>
                     </div>
-
                     <div className="mt-3">
                         <div className="h-2 bg-gray-800 rounded-full overflow-hidden flex">
                             <div style={{width: `${100-porcInteres}%`}} className="bg-green-500 h-full"></div>
@@ -343,7 +381,7 @@
             );
         };
 
-        // --- DASHBOARD PRINCIPAL ---
+        // --- DASHBOARD ---
         const Dashboard = () => {
             const { data, addItem, delItem, exportData, importData } = useContext(AppContext);
             const [form, setForm] = useState({ desc: '', amount: '', type: 'out', catId: 'food' });
@@ -356,13 +394,12 @@
             const submit = () => {
                 if(!form.desc || !form.amount) return;
                 const catInfo = CATS.find(c => c.id === form.catId) || CATS[7];
-                addItem('txs', { ...form, amount: parseFloat(form.amount), catIcon: catInfo.icon, catLabel: catInfo.label });
+                addItem('txs', { ...form, amount: parseFloat(form.amount), catId: form.catId, catIcon: catInfo.icon, catLabel: catInfo.label });
                 setForm({ ...form, desc: '', amount: '' });
             };
 
             return (
                 <div className="pb-32 max-w-xl mx-auto min-h-screen">
-                    {/* Header con Texto en Nubes */}
                     <nav className="p-6 flex justify-between items-center sticky top-0 bg-black/80 backdrop-blur-md z-20 border-b border-white/5">
                         <span className="text-lg font-bold">FamilyWealth</span>
                         <div className="flex gap-2">
@@ -376,7 +413,6 @@
                         </div>
                     </nav>
 
-                    {/* Balance Plateado */}
                     <div className="px-6 py-8 text-center">
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Patrimonio Neto</p>
                         <h1 className="text-6xl font-bold silver-text mb-2 tracking-tight">{balance.toFixed(2)}€</h1>
@@ -387,19 +423,15 @@
                     </div>
 
                     <div className="px-4 space-y-4">
-                        
-                        {/* INPUT PRINCIPAL */}
                         <div className="ios-card bg-gray-900/80 backdrop-blur border-blue-500/20 border">
                             <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
                                 <button onClick={() => setForm({...form, type: 'in'})} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${form.type === 'in' ? 'bg-green-600 text-white' : 'text-gray-500'}`}>INGRESO</button>
                                 <button onClick={() => setForm({...form, type: 'out'})} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${form.type === 'out' ? 'bg-red-600 text-white' : 'text-gray-500'}`}>GASTO</button>
                             </div>
-
                             <div className="flex gap-3 mb-4">
                                 <input placeholder="Concepto" value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} className="ios-input flex-1" />
                                 <input type="number" placeholder="0.00" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className="ios-input w-24 text-center" />
                             </div>
-
                             {form.type === 'out' && (
                                 <div className="mb-4">
                                     <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">Categoría</p>
@@ -413,20 +445,17 @@
                                     </div>
                                 </div>
                             )}
-
                             <button onClick={submit} className="ios-btn w-full bg-white text-black hover:bg-gray-200">Registrar</button>
                         </div>
 
-                        {/* AHORRO (NUEVO) */}
+                        {/* MÓDULOS */}
+                        <ExpenseChart /> {/* GRÁFICO AQUÍ */}
                         <SavingsGoals />
-
-                        {/* MÓDULOS EXTRA */}
                         <SubscriptionManager />
                         <SmartSimulator />
 
-                        {/* HISTORIAL */}
                         <div className="ios-card">
-                            <h3 className="text-xs uppercase font-bold text-gray-500 mb-4">Actividad Reciente</h3>
+                            <h3 className="text-xs uppercase font-bold text-gray-500 mb-4">Actividad</h3>
                             <div className="space-y-4">
                                 {data.txs.slice(0, 8).map(t => (
                                     <div key={t.id} className="flex justify-between items-center group animate-enter">
@@ -452,6 +481,24 @@
                         </div>
 
                     </div>
+                </div>
+            );
+        };
+
+        const Login = () => {
+            const { login } = useContext(AppContext);
+            const [pass, setPass] = useState('');
+            const [err, setErr] = useState('');
+            return (
+                <div className="h-screen flex flex-col items-center justify-center bg-black p-6">
+                    <div className="w-20 h-20 bg-gray-900 rounded-3xl flex items-center justify-center mb-6 border border-gray-800 shadow-[0_0_30px_rgba(10,132,255,0.2)]">
+                        <Icon name="wallet" size={36} className="text-blue-500" />
+                    </div>
+                    <h1 className="text-2xl font-bold mb-1 silver-text">FamilyWealth</h1>
+                    <p className="text-gray-500 text-sm mb-8">Platinum Edition</p>
+                    <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Clave" className="ios-input text-center text-xl mb-4 max-w-xs" />
+                    <button onClick={() => pass.length > 3 ? (!login(pass) && setErr('Error')) : setErr('Mínimo 4')} className="ios-btn bg-blue-600 text-white w-full max-w-xs">Entrar</button>
+                    {err && <p className="text-red-500 mt-4 text-xs">{err}</p>}
                 </div>
             );
         };
