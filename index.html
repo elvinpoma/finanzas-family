@@ -17,13 +17,21 @@
     <style>
         body { background-color: #000; color: #f5f5f7; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, Helvetica, sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        /* UI Components */
+        /* UI Components Estilo Premium */
         .ios-card { background: #1C1C1E; border-radius: 22px; padding: 20px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
         .ios-input { background: #2C2C2E; border: 1px solid #3A3A3C; border-radius: 12px; padding: 14px; color: white; width: 100%; outline: none; font-size: 16px; transition: all 0.2s; }
         .ios-input:focus { border-color: #0A84FF; background: #323234; }
         .ios-btn { border-radius: 14px; font-weight: 600; padding: 16px; transition: transform 0.1s, opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .ios-btn:active { transform: scale(0.97); opacity: 0.8; }
         
+        /* Efecto Plateado Premium para el Saldo */
+        .silver-text {
+            background: linear-gradient(180deg, #FFFFFF 0%, #A0A0A0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0px 2px 10px rgba(255,255,255,0.1);
+        }
+
         /* Utility */
         .hide-scroll::-webkit-scrollbar { display: none; }
         .emoji-btn { transition: all 0.2s; filter: grayscale(1); opacity: 0.5; transform: scale(0.9); }
@@ -57,7 +65,7 @@
             return <i data-lucide={name} width={size} height={size} className={className}></i>;
         };
 
-        // --- CONTEXTO (CON IMPORTAR/EXPORTAR) ---
+        // --- CONTEXTO (Con Importar/Exportar) ---
         const AppContext = createContext();
 
         const AppProvider = ({ children }) => {
@@ -66,7 +74,7 @@
 
             const login = (password) => {
                 try {
-                    const encrypted = localStorage.getItem('fw_mix_db');
+                    const encrypted = localStorage.getItem('fw_ultimate_db');
                     if (!encrypted) {
                         const initial = { txs: [], subs: [], goals: [] };
                         setUser({ key: password }); setData(initial); save(initial, password);
@@ -74,7 +82,7 @@
                     }
                     const bytes = CryptoJS.AES.decrypt(encrypted, password);
                     const decrypted = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-                    if(!decrypted.subs) decrypted.subs = []; // Migración segura
+                    if(!decrypted.subs) decrypted.subs = []; // Migración
                     setUser({ key: password }); setData(decrypted);
                     return true;
                 } catch (e) { return false; }
@@ -83,7 +91,7 @@
             const save = (newData, key = user?.key) => {
                 if(!key) return;
                 const encrypted = CryptoJS.AES.encrypt(JSON.stringify(newData), key).toString();
-                localStorage.setItem('fw_mix_db', encrypted);
+                localStorage.setItem('fw_ultimate_db', encrypted);
             };
 
             const addItem = (type, item) => {
@@ -95,7 +103,7 @@
                 setData(updated); save(updated);
             };
 
-            // FUNCIONES DE ARCHIVOS (DEL ANTERIOR CÓDIGO)
+            // FUNCIONES DE ARCHIVOS
             const exportData = () => {
                 const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
                 const url = URL.createObjectURL(blob);
@@ -111,8 +119,8 @@
                         const json = JSON.parse(e.target.result);
                         if(json.txs) {
                             setData(json); save(json); alert("✅ Datos cargados correctamente");
-                        } else { alert("⚠️ Archivo no válido"); }
-                    } catch (err) { alert("❌ Error al leer"); }
+                        } else { alert("⚠️ Archivo incorrecto"); }
+                    } catch (err) { alert("❌ Error al leer archivo"); }
                 };
                 reader.readAsText(file);
             };
@@ -124,90 +132,36 @@
             );
         };
 
-        // --- SIMULADOR INTELIGENTE (ESTILO MEJORADO) ---
-        const SmartSimulator = () => {
-            const [amount, setAmount] = useState(15000);
-            const [months, setMonths] = useState(48);
-            const [rate, setRate] = useState(6.5);
-            const [type, setType] = useState('auto');
-
-            const presets = {
-                home: { r: 3.5, label: 'Hipoteca', icon: 'home' },
-                auto: { r: 6.5, label: 'Coche', icon: 'car' },
-                card: { r: 12.0, label: 'Personal', icon: 'credit-card' }
-            };
-
-            const setPreset = (k) => {
-                setType(k); setRate(presets[k].r);
-                if(k === 'home') setMonths(300);
-                if(k === 'auto') setMonths(48);
-                if(k === 'card') setMonths(24);
-            };
-
-            const r = (rate / 100) / 12;
-            const cuota = amount * ((r * Math.pow(1+r, months)) / (Math.pow(1+r, months) - 1));
-            const totalPagado = cuota * months;
-            const totalInteres = totalPagado - amount;
-            const porcInteres = (totalInteres / totalPagado) * 100;
-
+        // --- LOGIN ---
+        const Login = () => {
+            const { login } = useContext(AppContext);
+            const [pass, setPass] = useState('');
+            const [err, setErr] = useState('');
             return (
-                <div className="ios-card bg-gray-900 border border-orange-500/20">
-                    <h3 className="text-orange-400 font-bold mb-4 flex gap-2 items-center"><Icon name="calculator" size={18}/> Simulador Préstamo</h3>
-                    
-                    {/* Botones Tipo */}
-                    <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
-                        {Object.entries(presets).map(([k, v]) => (
-                            <button key={k} onClick={() => setPreset(k)} 
-                                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex flex-col items-center gap-1
-                                ${type === k ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-500 hover:bg-white/5'}`}>
-                                <Icon name={v.icon} size={14} />
-                                {v.label}
-                            </button>
-                        ))}
+                <div className="h-screen flex flex-col items-center justify-center bg-black p-6">
+                    <div className="w-20 h-20 bg-gray-900 rounded-3xl flex items-center justify-center mb-6 border border-gray-800 shadow-[0_0_30px_rgba(10,132,255,0.2)]">
+                        <Icon name="wallet" size={36} className="text-blue-500" />
                     </div>
-
-                    <div className="flex gap-3 mb-4">
-                        <div className="flex-1">
-                            <label className="text-[10px] text-gray-500 uppercase font-bold pl-1">Solicito (€)</label>
-                            <input type="number" value={amount} onChange={e=>setAmount(Number(e.target.value))} className="ios-input text-center font-bold"/>
-                        </div>
-                        <div className="w-24">
-                            <label className="text-[10px] text-gray-500 uppercase font-bold pl-1">Meses</label>
-                            <input type="number" value={months} onChange={e=>setMonths(Number(e.target.value))} className="ios-input text-center font-bold"/>
-                        </div>
-                    </div>
-
-                    {/* Resultado Visual */}
-                    <div className="bg-black/30 p-4 rounded-xl text-center mb-3">
-                        <p className="text-xs text-gray-400 mb-1">Cuota Mensual</p>
-                        <p className="text-3xl font-bold text-white">{cuota.toFixed(2)}€</p>
-                    </div>
-
-                    {/* Barra de Dolor */}
-                    <div className="h-2 bg-gray-800 rounded-full overflow-hidden flex w-full">
-                        <div style={{width: `${100-porcInteres}%`}} className="bg-green-500/80 h-full"></div>
-                        <div style={{width: `${porcInteres}%`}} className="bg-red-500/80 h-full"></div>
-                    </div>
-                    <div className="flex justify-between text-[10px] mt-1 text-gray-500">
-                        <span>Capital</span>
-                        <span>Intereses ({totalInteres.toFixed(0)}€)</span>
-                    </div>
+                    <h1 className="text-2xl font-bold mb-1 silver-text">FamilyWealth</h1>
+                    <p className="text-gray-500 text-sm mb-8">Ultimate Edition</p>
+                    <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Clave de Acceso" className="ios-input text-center text-xl mb-4 max-w-xs" />
+                    <button onClick={() => pass.length > 3 ? (!login(pass) && setErr('Error')) : setErr('Mínimo 4')} className="ios-btn bg-blue-600 text-white w-full max-w-xs">Entrar</button>
+                    {err && <p className="text-red-500 mt-4 text-xs">{err}</p>}
                 </div>
             );
         };
 
-        // --- GESTOR DE SUSCRIPCIONES (ESTILO MEJORADO) ---
+        // --- COMPONENTE: SUBSCRIPCIONES ---
         const SubscriptionManager = () => {
             const { data, addItem, delItem } = useContext(AppContext);
             const [form, setForm] = useState({ name: '', amount: '' });
             const [isOpen, setIsOpen] = useState(false);
-            const total = data.subs.reduce((acc, s) => acc + s.amount, 0);
+            const totalMonthly = data.subs.reduce((acc, s) => acc + s.amount, 0);
 
             const handleAdd = () => {
-                if(form.name && form.amount) {
-                    addItem('subs', { name: form.name, amount: parseFloat(form.amount) });
-                    setForm({name:'', amount:''}); setIsOpen(false);
-                }
+                if(!form.name || !form.amount) return;
+                addItem('subs', { name: form.name, amount: parseFloat(form.amount) });
+                setForm({name:'', amount:''}); setIsOpen(false);
             };
 
             return (
@@ -215,16 +169,15 @@
                     <div className="flex justify-between items-start mb-4">
                         <div>
                             <h3 className="text-purple-400 font-bold flex items-center gap-2"><Icon name="zap" size={16}/> Gastos Fijos</h3>
-                            <p className="text-[10px] text-gray-500 mt-1">Netflix, Gym, Internet...</p>
+                            <p className="text-[10px] text-gray-500 mt-1">Suscripciones y Recibos</p>
                         </div>
                         <div className="text-right">
-                            <div className="text-xl font-bold text-white">{total.toFixed(2)}€</div>
+                            <div className="text-xl font-bold text-white">{totalMonthly.toFixed(2)}€</div>
                             <div className="text-[10px] text-gray-400">/mes</div>
                         </div>
                     </div>
-
                     {!isOpen ? (
-                        <button onClick={()=>setIsOpen(true)} className="w-full py-2 bg-white/5 rounded-xl text-xs text-gray-400 hover:text-white mb-4">+ Añadir</button>
+                        <button onClick={()=>setIsOpen(true)} className="w-full py-2 bg-white/5 rounded-xl text-xs text-gray-400 hover:text-white mb-4">+ Añadir Suscripción</button>
                     ) : (
                         <div className="flex gap-2 mb-4 animate-enter">
                             <input placeholder="Nombre" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="ios-input text-xs py-2"/>
@@ -232,7 +185,6 @@
                             <button onClick={handleAdd} className="bg-purple-600 px-3 rounded-xl text-white"><Icon name="check" size={16}/></button>
                         </div>
                     )}
-
                     <div className="space-y-2">
                         {data.subs.map(s => (
                             <div key={s.id} className="flex justify-between items-center bg-black/20 p-2 rounded-lg group">
@@ -248,12 +200,78 @@
             );
         };
 
+        // --- COMPONENTE: SIMULADOR INTELIGENTE (ESTILO PRO) ---
+        const SmartSimulator = () => {
+            const [amount, setAmount] = useState(15000);
+            const [months, setMonths] = useState(48);
+            const [rate, setRate] = useState(6.5);
+            const [type, setType] = useState('auto');
+
+            const presets = {
+                home: { r: 3.5, label: 'Hipoteca', icon: 'home' },
+                auto: { r: 6.5, label: 'Coche', icon: 'car' },
+                card: { r: 12.0, label: 'Personal', icon: 'credit-card' }
+            };
+
+            const setPreset = (k) => {
+                setType(k); setRate(presets[k].r);
+                if(k === 'home') setMonths(300); if(k === 'auto') setMonths(48); if(k === 'card') setMonths(24);
+            };
+
+            const r = (rate / 100) / 12;
+            const cuota = amount * ((r * Math.pow(1+r, months)) / (Math.pow(1+r, months) - 1));
+            const totalPagado = cuota * months;
+            const totalInteres = totalPagado - amount;
+            const porcInteres = (totalInteres / totalPagado) * 100;
+
+            return (
+                <div className="ios-card bg-gray-900 border border-orange-500/30">
+                    <h3 className="text-orange-500 font-bold mb-4 flex gap-2 items-center"><Icon name="calculator" size={16}/> Simulador</h3>
+                    
+                    <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
+                        {Object.entries(presets).map(([k, v]) => (
+                            <button key={k} onClick={() => setPreset(k)} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all flex flex-col items-center gap-1 ${type === k ? 'bg-orange-500 text-white' : 'text-gray-500 hover:bg-white/5'}`}>
+                                <Icon name={v.icon} size={14} /> {v.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div>
+                            <label className="text-[9px] text-gray-400 uppercase font-bold">Solicito (€)</label>
+                            <input type="number" value={amount} onChange={e=>setAmount(Number(e.target.value))} className="ios-input text-center font-bold text-sm py-2"/>
+                        </div>
+                        <div>
+                            <label className="text-[9px] text-gray-400 uppercase font-bold">Meses</label>
+                            <input type="number" value={months} onChange={e=>setMonths(Number(e.target.value))} className="ios-input text-center font-bold text-sm py-2"/>
+                        </div>
+                    </div>
+
+                    <div className="bg-black/40 p-3 rounded-xl text-center mb-2 border border-white/5">
+                        <p className="text-[10px] text-gray-400 mb-1">Cuota Mensual</p>
+                        <p className="text-2xl font-bold text-white">{cuota.toFixed(2)}€</p>
+                    </div>
+
+                    <div className="mt-3">
+                        <div className="h-2 bg-gray-800 rounded-full overflow-hidden flex">
+                            <div style={{width: `${100-porcInteres}%`}} className="bg-green-500 h-full"></div>
+                            <div style={{width: `${porcInteres}%`}} className="bg-red-500 h-full"></div>
+                        </div>
+                        <div className="flex justify-between text-[9px] mt-1 text-gray-500">
+                            <span>Capital</span>
+                            <span>Intereses ({totalInteres.toFixed(0)}€)</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- DASHBOARD PRINCIPAL ---
         const Dashboard = () => {
             const { data, addItem, delItem, exportData, importData } = useContext(AppContext);
             const [form, setForm] = useState({ desc: '', amount: '', type: 'out', catId: 'food' });
-            const fileInputRef = useRef(null);
-            
+            const fileRef = useRef(null);
+
             const income = data.txs.filter(t => t.type === 'in').reduce((acc, t) => acc + t.amount, 0);
             const expense = data.txs.filter(t => t.type === 'out').reduce((acc, t) => acc + t.amount, 0);
             const balance = income - expense;
@@ -267,20 +285,20 @@
 
             return (
                 <div className="pb-32 max-w-xl mx-auto min-h-screen">
-                    {/* Header con Menú de Archivos (INTEGRADO EN EL ESTILO) */}
+                    {/* Header con Botones de Archivo */}
                     <nav className="p-6 flex justify-between items-center sticky top-0 bg-black/80 backdrop-blur-md z-20 border-b border-white/5">
                         <span className="text-lg font-bold">FamilyWealth</span>
-                        <div className="flex gap-4">
-                            <button onClick={()=>fileInputRef.current.click()} className="text-gray-400 hover:text-blue-400 transition-colors"><Icon name="upload-cloud" size={20}/></button>
-                            <button onClick={exportData} className="text-gray-400 hover:text-green-400 transition-colors"><Icon name="download-cloud" size={20}/></button>
-                            <input type="file" ref={fileInputRef} onChange={(e)=>e.target.files[0] && importData(e.target.files[0])} className="hidden" accept=".json"/>
+                        <div className="flex gap-3">
+                            <button onClick={()=>fileRef.current.click()} className="text-gray-400 hover:text-blue-400"><Icon name="upload-cloud" size={20}/></button>
+                            <button onClick={exportData} className="text-gray-400 hover:text-green-400"><Icon name="download-cloud" size={20}/></button>
+                            <input type="file" ref={fileRef} onChange={e => e.target.files[0] && importData(e.target.files[0])} className="hidden" accept=".json"/>
                         </div>
                     </nav>
 
-                    {/* Balance */}
-                    <div className="px-6 py-6 text-center">
-                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Disponible</p>
-                        <h1 className="text-5xl font-bold text-white mb-2">{balance.toFixed(2)}€</h1>
+                    {/* Balance Plateado */}
+                    <div className="px-6 py-8 text-center">
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Patrimonio Neto</p>
+                        <h1 className="text-6xl font-bold silver-text mb-2 tracking-tight">{balance.toFixed(2)}€</h1>
                         <div className="flex justify-center gap-4 text-xs font-mono">
                             <span className="text-green-500 bg-green-900/20 px-2 py-1 rounded">+{income}</span>
                             <span className="text-red-500 bg-red-900/20 px-2 py-1 rounded">-{expense}</span>
@@ -288,6 +306,7 @@
                     </div>
 
                     <div className="px-4 space-y-4">
+                        
                         {/* INPUT PRINCIPAL */}
                         <div className="ios-card bg-gray-900/80 backdrop-blur border-blue-500/20 border">
                             <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
@@ -314,18 +333,18 @@
                                 </div>
                             )}
 
-                            <button onClick={submit} className="ios-btn w-full bg-white text-black hover:bg-gray-200">Registrar</button>
+                            <button onClick={submit} className="ios-btn w-full bg-white text-black hover:bg-gray-200">Registrar Movimiento</button>
                         </div>
 
-                        {/* COMPONENTES EXTRA */}
-                        <SmartSimulator />
+                        {/* MÓDULOS EXTRA */}
                         <SubscriptionManager />
+                        <SmartSimulator />
 
                         {/* HISTORIAL */}
                         <div className="ios-card">
-                            <h3 className="text-xs uppercase font-bold text-gray-500 mb-4">Movimientos</h3>
+                            <h3 className="text-xs uppercase font-bold text-gray-500 mb-4">Actividad Reciente</h3>
                             <div className="space-y-4">
-                                {data.txs.slice(0, 10).map(t => (
+                                {data.txs.slice(0, 8).map(t => (
                                     <div key={t.id} className="flex justify-between items-center group animate-enter">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-xl">
@@ -340,32 +359,15 @@
                                             <span className={`font-mono font-bold ${t.type === 'in' ? 'text-green-400' : 'text-white'}`}>
                                                 {t.type === 'in' ? '+' : '-'}{t.amount.toFixed(2)}€
                                             </span>
-                                            <button onClick={() => delItem('txs', t.id)} className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Icon name="x" size={14}/>
-                                            </button>
+                                            <button onClick={() => delItem('txs', t.id)} className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="x" size={14}/></button>
                                         </div>
                                     </div>
                                 ))}
                                 {data.txs.length === 0 && <p className="text-center text-gray-600 text-sm py-4">Todo limpio ✨</p>}
                             </div>
                         </div>
-                    </div>
-                </div>
-            );
-        };
 
-        const Login = () => {
-            const { login } = useContext(AppContext);
-            const [pass, setPass] = useState('');
-            return (
-                <div className="h-screen flex flex-col items-center justify-center bg-black p-6">
-                    <div className="w-20 h-20 bg-gray-900 rounded-3xl flex items-center justify-center mb-6 border border-gray-800 shadow-[0_0_30px_rgba(10,132,255,0.2)]">
-                        <Icon name="wallet" size={36} className="text-blue-500" />
                     </div>
-                    <h1 className="text-2xl font-bold mb-1">FamilyWealth</h1>
-                    <p className="text-gray-500 text-sm mb-8">Ultimate Edition</p>
-                    <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Clave" className="ios-input text-center text-xl mb-4 max-w-xs" />
-                    <button onClick={() => login(pass)} className="ios-btn bg-blue-600 text-white w-full max-w-xs">Entrar</button>
                 </div>
             );
         };
