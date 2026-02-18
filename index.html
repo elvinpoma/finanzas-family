@@ -3,166 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FamilyWealth Cyber OS</title>
-    <meta name="theme-color" content="#09090B">
-    <link rel="manifest" href="manifest.json">
+    <title>FamilyWealth | Cyber OS</title>
+    
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            document.body.innerHTML += `
+                <div style="position:fixed; top:0; left:0; width:100%; background:red; color:white; padding:20px; z-index:9999;">
+                    <h3>🚨 Error Crítico:</h3>
+                    <p>${message}</p>
+                    <p>Línea: ${lineno}</p>
+                </div>
+            `;
+        };
+    </script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        bg: '#000000', 
-                        surface: '#121212', 
+                        bg: '#09090B',
+                        surface: '#18181B',
                         surfaceHighlight: '#27272A',
-                        primary: '#7C3AED', 
-                        accent: '#8B5CF6', 
-                        neon: '#A78BFA', 
+                        primary: '#7C3AED',
+                        neon: '#A78BFA',
                     },
                     fontFamily: {
                         sans: ['"Plus Jakarta Sans"', 'sans-serif'],
                         mono: ['"JetBrains Mono"', 'monospace'],
                     },
                     boxShadow: {
-                        'neon': '0 0 20px -5px rgba(124, 58, 237, 0.4)',
-                        'glow': '0 0 40px -10px rgba(124, 58, 237, 0.6)',
+                        'neon': '0 0 20px -5px rgba(124, 58, 237, 0.3)',
                     }
                 }
             }
         }
     </script>
 
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
     <style>
-        body { background-color: #000; color: #E4E4E7; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
-        
-        /* Efecto de luz ambiental */
+        body { background-color: #050505; color: #E4E4E7; overflow-x: hidden; }
         .ambient-light {
             position: fixed; top: -20%; left: 50%; transform: translateX(-50%);
             width: 120vw; height: 60vh;
-            background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, rgba(0,0,0,0) 70%);
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, rgba(9, 9, 11, 0) 70%);
             z-index: -1; pointer-events: none;
         }
-
-        /* Tarjetas estilo Glassmorphism Cyberpunk */
         .cyber-card {
-            background: rgba(20, 20, 23, 0.7);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: rgba(24, 24, 27, 0.65);
+            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-            transition: all 0.3s ease;
+            border-radius: 24px;
         }
+        .cyber-input {
+            background: #0f0f12; border: 1px solid #27272A; color: white; border-radius: 12px;
+            transition: all 0.3s; outline: none;
+        }
+        .cyber-input:focus { border-color: #7C3AED; box-shadow: 0 0 15px -3px rgba(124, 58, 237, 0.4); }
         
-        /* Scrollbar oculta pero funcional */
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Animación de entrada */
-        @keyframes fadeSlide { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-enter { animation: fadeSlide 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        /* Animaciones */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.5s ease-out forwards; }
     </style>
 </head>
 <body>
-    
-    <div id="root"></div>
+
     <div class="ambient-light"></div>
+    <div id="root"></div>
 
     <script type="text/babel" data-presets="env,react">
         const { useState, useEffect, useMemo } = React;
 
         // --- COMPONENTE DE ICONO SEGURO ---
-        // Este componente usa la API global de Lucide para evitar errores de importación
+        // Usamos este método para evitar errores si Lucide no carga a tiempo
         const Icon = ({ name, size = 20, className = "" }) => {
             useEffect(() => {
-                // Forzar renderizado de iconos cuando el componente se monta
-                if (window.lucide) window.lucide.createIcons();
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
             }, [name]);
-
-            return <i data-lucide={name.toLowerCase()} width={size} height={size} className={className}></i>;
+            
+            return <i data-lucide={name} width={size} height={size} className={className}></i>;
         };
 
-        // --- DATOS Y LÓGICA FINANCIERA ---
-        const useFinance = () => {
-            const [assets, setAssets] = useState([
-                { id: 1, name: "Cuenta Main", type: "cash", amount: 12450.00, icon: "wallet" },
-                { id: 2, name: "Bitcoin Cold", type: "crypto", amount: 35000.00, icon: "bitcoin" },
-                { id: 3, name: "Cartera ETF", type: "invest", amount: 8200.50, icon: "trending-up" }
+        const Card = ({ children, className = "" }) => (
+            <div className={`cyber-card p-6 ${className} animate-in`}>
+                {children}
+            </div>
+        );
+
+        const Button = ({ children, onClick, variant = 'primary', className = "" }) => {
+            const baseStyle = "px-5 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95";
+            const variants = {
+                primary: "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-neon",
+                ghost: "bg-transparent hover:bg-white/5 text-zinc-400 hover:text-white"
+            };
+            return <button onClick={onClick} className={`${baseStyle} ${variants[variant]} ${className}`}>{children}</button>;
+        };
+
+        // --- SISTEMA FINANCIERO ---
+        const useFinanceSystem = () => {
+            const [assets] = useState([
+                { id: 1, name: "Cuenta Principal", type: "Efectivo", amount: 12450.00, icon: "wallet" },
+                { id: 2, name: "Bitcoin", type: "Crypto", amount: 35000.00, icon: "bitcoin" },
+                { id: 3, name: "Inmuebles", type: "Activo", amount: 180000.00, icon: "home" }
             ]);
-            const [txs, setTxs] = useState([
-                { id: 1, desc: "Sueldo Tech Corp", amount: 3200, type: "in", cat: "Nómina" },
-                { id: 2, desc: "Supermercado", amount: 150, type: "out", cat: "Comida" },
-                { id: 3, desc: "Restaurante", amount: 85, type: "out", cat: "Ocio" },
+
+            const [goals] = useState([
+                { id: 1, name: "Tesla Model 3", target: 45000, current: 12000, color: "bg-blue-500" },
+                { id: 2, name: "Japón", target: 5000, current: 1500, color: "bg-pink-500" }
             ]);
-            
-            // Cálculo de patrimonio neto
+
             const netWorth = assets.reduce((acc, item) => acc + item.amount, 0);
 
-            // Simulador de Hipoteca
-            const calcMortgage = (amount, rate, years) => {
-                const r = (rate / 100) / 12;
-                const n = years * 12;
-                const monthly = (amount * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-                const total = monthly * n;
-                return { monthly, total, interest: total - amount };
+            // Calculadora Hipotecaria Pura JS
+            const calculateMortgage = (principal, annualRate, years) => {
+                const p = parseFloat(principal);
+                const r = parseFloat(annualRate) / 100 / 12;
+                const n = parseFloat(years) * 12;
+                if (r === 0) return { monthly: p/n, total: p, schedule: [] };
+                
+                const monthlyPayment = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+                
+                // Generar tabla reducida para gráfico
+                let balance = p;
+                let schedule = [];
+                for (let i = 1; i <= n; i++) {
+                    balance -= (monthlyPayment - (balance * r));
+                    if (i % 12 === 0) schedule.push({ year: i/12, balance: Math.max(0, balance) });
+                }
+                return { monthly: monthlyPayment, total: monthlyPayment * n, schedule };
             };
 
-            return { assets, txs, netWorth, calcMortgage };
+            return { assets, goals, netWorth, calculateMortgage };
         };
 
-        // --- PANTALLA: DASHBOARD ---
-        const Dashboard = ({ finance }) => {
-            const { netWorth, assets, txs } = finance;
-
+        // --- VISTA: DASHBOARD ---
+        const DashboardView = ({ finance }) => {
             return (
-                <div className="space-y-6 pb-24 animate-enter">
-                    {/* TARJETA PRINCIPAL DE PATRIMONIO */}
-                    <div className="cyber-card p-8 relative overflow-hidden group">
-                        {/* Fondo decorativo */}
-                        <div className="absolute -right-10 -top-10 text-primary opacity-10 transform rotate-12 group-hover:scale-110 transition-transform duration-700">
-                            <Icon name="activity" size={200} />
-                        </div>
-                        
-                        <div className="relative z-10">
-                            <h3 className="text-zinc-400 text-xs font-bold uppercase tracking-[0.2em] mb-2">Patrimonio Total</h3>
-                            <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tighter mb-4 drop-shadow-[0_0_15px_rgba(124,58,237,0.5)]">
-                                {netWorth.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€
-                            </h1>
-                            <div className="flex items-center gap-3">
-                                <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-500/30 flex items-center gap-1">
-                                    <Icon name="trending-up" size={12} /> +4.2%
-                                </span>
-                                <span className="text-zinc-500 text-xs">vs mes anterior</span>
-                            </div>
-                        </div>
-                    </div>
+                <div className="space-y-6 pb-24">
+                    {/* PATRIMONIO */}
+                    <Card className="text-center py-10 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 opacity-10"><Icon name="activity" size={150} /></div>
+                        <h3 className="text-zinc-500 text-sm uppercase tracking-widest mb-2">Patrimonio Neto</h3>
+                        <h1 className="text-5xl md:text-6xl font-bold text-white mb-2">
+                            {finance.netWorth.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                        </h1>
+                        <span className="bg-green-500/10 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-500/20">
+                            +4.2% este mes
+                        </span>
+                    </Card>
 
-                    {/* GRID BENTO: ACTIVOS */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="cyber-card p-5">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-bold text-zinc-300 flex items-center gap-2">
-                                    <Icon name="pie-chart" size={18} className="text-primary"/> Distribución
-                                </h3>
-                                <button className="text-primary hover:text-white transition"><Icon name="plus" size={18}/></button>
-                            </div>
+                        {/* ACTIVOS */}
+                        <Card>
+                            <h3 className="text-white font-bold mb-4 flex gap-2"><Icon name="pie-chart" /> Activos</h3>
                             <div className="space-y-3">
-                                {assets.map(a => (
-                                    <div key={a.id} className="flex justify-between items-center bg-black/40 p-3 rounded-xl border border-white/5 hover:border-primary/50 transition-colors cursor-pointer group">
+                                {finance.assets.map(a => (
+                                    <div key={a.id} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 group-hover:text-primary transition-colors">
-                                                <Icon name={a.icon} size={18} />
-                                            </div>
+                                            <div className="text-violet-400"><Icon name={a.icon} /></div>
                                             <div>
-                                                <p className="font-bold text-sm text-zinc-200">{a.name}</p>
+                                                <p className="text-sm font-medium text-white">{a.name}</p>
                                                 <p className="text-[10px] text-zinc-500 uppercase">{a.type}</p>
                                             </div>
                                         </div>
@@ -170,144 +181,125 @@
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </Card>
 
-                        {/* TRANSACCIONES */}
-                        <div className="cyber-card p-5">
-                            <h3 className="font-bold text-zinc-300 mb-4 flex items-center gap-2">
-                                <Icon name="arrow-right-left" size={18} className="text-primary"/> Reciente
-                            </h3>
-                            <div className="space-y-3">
-                                {txs.map(t => (
-                                    <div key={t.id} className="flex justify-between items-center text-sm border-b border-white/5 pb-2 last:border-0">
-                                        <span className="text-zinc-300">{t.desc}</span>
-                                        <span className={`font-mono font-bold ${t.type === 'in' ? 'text-green-400' : 'text-white'}`}>
-                                            {t.type === 'in' ? '+' : '-'}{t.amount}€
-                                        </span>
+                        {/* METAS */}
+                        <Card>
+                            <h3 className="text-white font-bold mb-4 flex gap-2"><Icon name="target" /> Metas</h3>
+                            <div className="space-y-6">
+                                {finance.goals.map(g => (
+                                    <div key={g.id}>
+                                        <div className="flex justify-between text-xs mb-1 text-zinc-400">
+                                            <span>{g.name}</span>
+                                            <span>{Math.round((g.current/g.target)*100)}%</span>
+                                        </div>
+                                        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                            <div style={{width: `${(g.current/g.target)*100}%`}} className={`h-full ${g.color}`}></div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </Card>
                     </div>
                 </div>
             );
         };
 
-        // --- PANTALLA: SIMULADOR ---
-        const Simulator = ({ finance }) => {
-            const [amount, setAmount] = useState(200000);
-            const [years, setYears] = useState(30);
-            const [rate, setRate] = useState(3.5);
-            
-            const result = finance.calcMortgage(amount, rate, years);
+        // --- VISTA: SIMULADOR ---
+        const SimulatorView = ({ finance }) => {
+            const [val, setVal] = useState({ amount: 200000, years: 30, rate: 3.5 });
+            const result = finance.calculateMortgage(val.amount, val.rate, val.years);
 
             return (
-                <div className="pb-24 animate-enter">
-                    <div className="cyber-card p-6 border-primary/30 shadow-neon mb-6">
-                        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                            <Icon name="calculator" className="text-primary" /> Simulador Hipotecario AI
-                        </h2>
-
-                        {/* INPUTS DE RANGO */}
-                        <div className="space-y-6 mb-8">
+                <div className="pb-24">
+                    <Card className="mb-6">
+                        <h2 className="text-xl font-bold text-violet-400 mb-6 flex gap-2"><Icon name="calculator" /> Simulador AI</h2>
+                        
+                        <div className="space-y-4 mb-8">
                             <div>
-                                <div className="flex justify-between text-xs mb-2">
-                                    <span className="text-zinc-400 uppercase tracking-wider">Capital</span>
-                                    <span className="text-white font-mono font-bold text-lg">{parseInt(amount).toLocaleString()}€</span>
-                                </div>
-                                <input type="range" min="50000" max="1000000" step="5000" value={amount} onChange={e=>setAmount(e.target.value)} 
-                                    className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary hover:accent-violet-400" />
+                                <label className="text-xs text-zinc-500 uppercase">Préstamo (€)</label>
+                                <input type="number" value={val.amount} onChange={e=>setVal({...val, amount:e.target.value})} 
+                                    className="cyber-input w-full p-3 text-xl font-bold" />
                             </div>
-                            
-                            <div className="grid grid-cols-2 gap-8">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <div className="flex justify-between text-xs mb-2">
-                                        <span className="text-zinc-400 uppercase">Años</span>
-                                        <span className="text-white font-mono font-bold">{years}</span>
-                                    </div>
-                                    <input type="range" min="5" max="40" value={years} onChange={e=>setYears(e.target.value)} 
-                                        className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary" />
+                                    <label className="text-xs text-zinc-500 uppercase">Años</label>
+                                    <input type="number" value={val.years} onChange={e=>setVal({...val, years:e.target.value})} 
+                                        className="cyber-input w-full p-3 text-center" />
                                 </div>
                                 <div>
-                                    <div className="flex justify-between text-xs mb-2">
-                                        <span className="text-zinc-400 uppercase">Interés</span>
-                                        <span className="text-white font-mono font-bold">{rate}%</span>
-                                    </div>
-                                    <input type="range" min="0.5" max="15" step="0.1" value={rate} onChange={e=>setRate(e.target.value)} 
-                                        className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary" />
+                                    <label className="text-xs text-zinc-500 uppercase">Interés %</label>
+                                    <input type="number" value={val.rate} step="0.1" onChange={e=>setVal({...val, rate:e.target.value})} 
+                                        className="cyber-input w-full p-3 text-center text-violet-400 border-violet-500/30" />
                                 </div>
                             </div>
                         </div>
 
-                        {/* RESULTADOS */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-black/30 p-4 rounded-xl border border-white/5 text-center">
-                                <p className="text-[10px] text-zinc-500 uppercase mb-1">Cuota Mensual</p>
-                                <p className="text-2xl md:text-3xl font-bold text-white font-mono">{result.monthly.toFixed(2)}€</p>
-                            </div>
-                            <div className="bg-black/30 p-4 rounded-xl border border-white/5 text-center">
-                                <p className="text-[10px] text-zinc-500 uppercase mb-1">Total Intereses</p>
-                                <p className="text-xl md:text-2xl font-bold text-red-400 font-mono">{result.interest.toFixed(0)}€</p>
-                            </div>
+                        <div className="bg-violet-500/10 border border-violet-500/20 p-4 rounded-xl text-center">
+                            <p className="text-xs text-zinc-400">Cuota Mensual</p>
+                            <p className="text-4xl font-bold text-white font-mono">{result.monthly.toFixed(2)}€</p>
                         </div>
-                    </div>
+                    </Card>
+
+                    <Card>
+                        <h3 className="text-xs font-bold text-zinc-500 uppercase mb-4">Amortización (Visual)</h3>
+                        <div className="flex items-end h-32 gap-1 pb-2 border-b border-white/10">
+                            {result.schedule.map((point, i) => (
+                                <div key={i} style={{height: `${(point.balance / val.amount) * 100}%`}} 
+                                     className="flex-1 bg-zinc-700 hover:bg-violet-500 transition-colors rounded-t-sm"></div>
+                            ))}
+                        </div>
+                        <div className="flex justify-between text-[10px] text-zinc-500 mt-2">
+                            <span>Año 0</span>
+                            <span>Año {val.years}</span>
+                        </div>
+                    </Card>
                 </div>
             );
         };
 
         // --- APP PRINCIPAL ---
         const App = () => {
-            const [activeTab, setActiveTab] = useState('home');
-            const finance = useFinance();
+            const finance = useFinanceSystem();
+            const [view, setView] = useState('dashboard');
 
-            // Refrescar iconos al cambiar de tab
+            // Efecto para recargar iconos cuando cambia la vista
             useEffect(() => {
                 if(window.lucide) window.lucide.createIcons();
-            }, [activeTab]);
+            }, [view]);
 
             return (
-                <div className="min-h-screen max-w-4xl mx-auto px-4 py-6 font-sans text-zinc-100">
+                <div className="max-w-3xl mx-auto p-6 min-h-screen flex flex-col">
                     
-                    {/* CABECERA */}
-                    <header className="flex justify-between items-center mb-8 sticky top-0 z-50 py-4 bg-black/80 backdrop-blur-md">
+                    {/* HEADER */}
+                    <header className="flex justify-between items-center mb-8 sticky top-0 z-50 py-4 bg-black/80 backdrop-blur-md -mx-6 px-6 border-b border-white/5">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-neon">
-                                <Icon name="hexagon" size={24} />
+                                <Icon name="hexagon" />
                             </div>
                             <div>
                                 <h1 className="font-bold text-lg leading-none">FamilyWealth</h1>
-                                <p className="text-[10px] text-primary font-mono tracking-widest uppercase">Cyber OS</p>
+                                <p className="text-[10px] text-violet-400 font-mono uppercase">Cyber OS</p>
                             </div>
                         </div>
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/20 flex items-center justify-center">
-                             <Icon name="user" size={16} />
-                        </div>
+                        <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/20"></div>
                     </header>
 
-                    {/* CONTENIDO PRINCIPAL */}
-                    <main>
-                        {activeTab === 'home' && <Dashboard finance={finance} />}
-                        {activeTab === 'sim' && <Simulator finance={finance} />}
-                        {activeTab === 'settings' && (
-                            <div className="text-center py-20 animate-enter">
-                                <Icon name="settings" size={48} className="mx-auto text-zinc-700 mb-4" />
-                                <h2 className="text-zinc-500">Ajustes del Sistema</h2>
-                            </div>
-                        )}
+                    {/* CONTENIDO */}
+                    <main className="flex-1">
+                        {view === 'dashboard' ? <DashboardView finance={finance} /> : <SimulatorView finance={finance} />}
                     </main>
 
-                    {/* BARRA DE NAVEGACIÓN FLOTANTE (DOCK) */}
-                    <nav className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-zinc-900/90 backdrop-blur-xl border border-white/10 p-2 rounded-full shadow-2xl flex gap-1 z-50">
-                        <button onClick={()=>setActiveTab('home')} className={`p-3 rounded-full transition-all ${activeTab === 'home' ? 'bg-primary text-white shadow-neon scale-110' : 'text-zinc-500 hover:text-white'}`}>
-                            <Icon name="layout-grid" size={20} />
+                    {/* NAVEGACIÓN INFERIOR (Dock style) */}
+                    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900/90 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex gap-2 shadow-2xl z-50">
+                        <button onClick={()=>setView('dashboard')} className={`p-3 rounded-xl transition-all ${view==='dashboard' ? 'bg-violet-600 text-white shadow-neon' : 'text-zinc-500 hover:text-white'}`}>
+                            <Icon name="layout-grid" />
                         </button>
-                        <button onClick={()=>setActiveTab('sim')} className={`p-3 rounded-full transition-all ${activeTab === 'sim' ? 'bg-primary text-white shadow-neon scale-110' : 'text-zinc-500 hover:text-white'}`}>
-                            <Icon name="calculator" size={20} />
-                        </button>
-                        <button onClick={()=>setActiveTab('settings')} className={`p-3 rounded-full transition-all ${activeTab === 'settings' ? 'bg-primary text-white shadow-neon scale-110' : 'text-zinc-500 hover:text-white'}`}>
-                            <Icon name="settings" size={20} />
+                        <button onClick={()=>setView('simulator')} className={`p-3 rounded-xl transition-all ${view==='simulator' ? 'bg-violet-600 text-white shadow-neon' : 'text-zinc-500 hover:text-white'}`}>
+                            <Icon name="calculator" />
                         </button>
                     </nav>
+
                 </div>
             );
         };
