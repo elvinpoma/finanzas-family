@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FamilyWealth Lifestyle</title>
+    <title>FamilyWealth Pro</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
 
@@ -15,300 +15,266 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        body { background-color: #000; color: #f5f5f7; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, Helvetica, sans-serif; -webkit-tap-highlight-color: transparent; }
-        
-        /* UI Components */
-        .ios-card { background: #1C1C1E; border-radius: 22px; padding: 20px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-        .ios-input { background: #2C2C2E; border: 1px solid #3A3A3C; border-radius: 12px; padding: 14px; color: white; width: 100%; outline: none; font-size: 16px; transition: all 0.2s; }
+        body { background-color: #000; color: #f5f5f7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .ios-card { background: #1C1C1E; border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 16px; }
+        .ios-input { background: #2C2C2E; border: 1px solid #3A3A3C; border-radius: 12px; padding: 12px; color: white; width: 100%; outline: none; transition: 0.2s; }
         .ios-input:focus { border-color: #0A84FF; background: #323234; }
-        .ios-btn { border-radius: 14px; font-weight: 600; padding: 16px; transition: transform 0.1s, opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .ios-btn:active { transform: scale(0.97); opacity: 0.8; }
-        
-        /* Utility */
+        .btn-action { background: #0A84FF; color: white; border-radius: 12px; padding: 14px; font-weight: 600; width: 100%; }
+        .btn-action:active { opacity: 0.8; transform: scale(0.98); }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .emoji-btn { transition: all 0.2s; filter: grayscale(1); opacity: 0.5; transform: scale(0.9); }
-        .emoji-btn.active { filter: grayscale(0); opacity: 1; transform: scale(1.1); background: rgba(255,255,255,0.1); border-radius: 12px; }
-        
-        /* Animaciones */
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .animate-enter { animation: slideUp 0.4s ease-out forwards; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, createContext, useContext } = React;
+        const { useState, useEffect, useMemo, createContext, useContext, useRef } = React;
 
-        // --- CONSTANTES DE CATEGORÍAS (EMOJIS) ---
-        const CATS = [
-            { id: 'home', icon: '🏠', label: 'Casa', color: 'text-blue-400' },
-            { id: 'food', icon: '🍔', label: 'Comida', color: 'text-orange-400' },
-            { id: 'transport', icon: '🚗', label: 'Auto', color: 'text-red-400' },
-            { id: 'shop', icon: '🛍️', label: 'Compras', color: 'text-pink-400' },
-            { id: 'fun', icon: '🎉', label: 'Ocio', color: 'text-purple-400' },
-            { id: 'health', icon: '💊', label: 'Salud', color: 'text-green-400' },
-            { id: 'bills', icon: '📄', label: 'Factura', color: 'text-yellow-400' },
-            { id: 'misc', icon: '📦', label: 'Otros', color: 'text-gray-400' }
-        ];
-
-        const Icon = ({ name, size = 20, className="" }) => {
+        const Icon = ({ name, size = 18, className="" }) => {
             useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, [name]);
             return <i data-lucide={name} width={size} height={size} className={className}></i>;
         };
 
-        // --- CONTEXTO ---
         const AppContext = createContext();
 
         const AppProvider = ({ children }) => {
             const [user, setUser] = useState(null);
-            // Estructura de datos v4: txs (transacciones), subs (suscripciones), goals (metas)
             const [data, setData] = useState({ txs: [], subs: [], goals: [] });
 
+            // LOGIN
             const login = (password) => {
                 try {
-                    const encrypted = localStorage.getItem('fw_v4_db');
+                    const encrypted = localStorage.getItem('fw_db_v5');
                     if (!encrypted) {
-                        // Nuevo usuario
-                        const initial = { txs: [], subs: [], goals: [] };
-                        setUser({ key: password }); setData(initial); save(initial, password);
+                        const init = { txs: [], subs: [], goals: [] };
+                        setUser({ key: password }); setData(init); save(init, password);
                         return true;
                     }
                     const bytes = CryptoJS.AES.decrypt(encrypted, password);
-                    const decrypted = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-                    
-                    // Migración segura: si vienen datos viejos sin 'subs', los creamos
-                    if(!decrypted.subs) decrypted.subs = [];
-                    if(!decrypted.goals) decrypted.goals = [];
-                    
-                    setUser({ key: password }); setData(decrypted);
+                    const dec = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+                    setUser({ key: password }); setData(dec || { txs: [], subs: [], goals: [] });
                     return true;
                 } catch (e) { return false; }
             };
 
-            const save = (newData, key = user.key) => {
+            const save = (newData, key = user?.key) => {
+                if(!key) return;
                 const encrypted = CryptoJS.AES.encrypt(JSON.stringify(newData), key).toString();
-                localStorage.setItem('fw_v4_db', encrypted);
+                localStorage.setItem('fw_db_v5', encrypted);
             };
 
-            // Acciones genéricas
-            const addItem = (type, item) => {
-                const updated = { ...data, [type]: [{ ...item, id: Date.now() }, ...data[type]] };
-                setData(updated); save(updated);
-            };
-            const delItem = (type, id) => {
-                const updated = { ...data, [type]: data[type].filter(i => i.id !== id) };
-                setData(updated); save(updated);
-            };
+            // CRUD
+            const add = (key, item) => { const n = {...data, [key]: [{...item, id: Date.now()}, ...data[key]]}; setData(n); save(n); };
+            const del = (key, id) => { const n = {...data, [key]: data[key].filter(i => i.id !== id)}; setData(n); save(n); };
 
+            // SISTEMA DE ARCHIVOS (IMPORTAR / EXPORTAR)
             const exportData = () => {
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob); a.download = `backup_fw_${new Date().toISOString().slice(0,10)}.json`;
+                a.href = url; a.download = `FW_Backup_${new Date().toISOString().slice(0,10)}.json`;
                 a.click();
             };
 
+            const importData = (file) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const json = JSON.parse(e.target.result);
+                        if(json.txs && json.subs) {
+                            setData(json);
+                            save(json);
+                            alert("✅ Datos importados correctamente.");
+                        } else {
+                            alert("⚠️ El archivo no es válido.");
+                        }
+                    } catch (err) { alert("❌ Error al leer el archivo."); }
+                };
+                reader.readAsText(file);
+            };
+
             return (
-                <AppContext.Provider value={{ user, login, data, addItem, delItem, exportData }}>
+                <AppContext.Provider value={{ user, login, data, add, del, exportData, importData }}>
                     {children}
                 </AppContext.Provider>
             );
         };
 
-        // --- PANTALLA LOGIN ---
-        const Login = () => {
-            const { login } = useContext(AppContext);
-            const [pass, setPass] = useState('');
-            const [err, setErr] = useState('');
+        // --- COMPONENTE: SIMULADOR INTUITIVO (NUEVO) ---
+        const SmartSimulator = () => {
+            const [amount, setAmount] = useState(15000);
+            const [months, setMonths] = useState(48);
+            const [rate, setRate] = useState(6.5);
+            const [type, setType] = useState('auto'); // home, auto, personal
+
+            // Presets de Intereses (Aproximados de mercado)
+            const presets = {
+                home: { r: 3.5, label: 'Hipoteca', icon: 'home' },
+                auto: { r: 6.5, label: 'Coche', icon: 'car' },
+                card: { r: 12.0, label: 'Personal', icon: 'credit-card' }
+            };
+
+            const setPreset = (k) => {
+                setType(k); setRate(presets[k].r);
+                // Ajustar años lógicos por defecto
+                if(k === 'home') setMonths(300); // 25 años
+                if(k === 'auto') setMonths(48);  // 4 años
+                if(k === 'card') setMonths(24);  // 2 años
+            };
+
+            // Cálculo
+            const r = (rate / 100) / 12;
+            const cuota = amount * ((r * Math.pow(1+r, months)) / (Math.pow(1+r, months) - 1));
+            const totalPagado = cuota * months;
+            const totalInteres = totalPagado - amount;
+            const porcInteres = (totalInteres / totalPagado) * 100;
+
             return (
-                <div className="h-screen flex flex-col items-center justify-center bg-black p-6">
-                    <div className="w-20 h-20 bg-gray-900 rounded-3xl flex items-center justify-center mb-6 border border-gray-800 shadow-[0_0_30px_rgba(10,132,255,0.2)]">
-                        <Icon name="wallet" size={36} className="text-blue-500" />
+                <div className="ios-card bg-gray-900 border border-orange-500/30">
+                    <h3 className="text-orange-500 font-bold mb-4 flex gap-2 items-center"><Icon name="calculator"/> Simulador Préstamo</h3>
+                    
+                    {/* Botones de Tipo */}
+                    <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
+                        {Object.entries(presets).map(([k, v]) => (
+                            <button key={k} onClick={() => setPreset(k)} 
+                                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex flex-col items-center gap-1
+                                ${type === k ? 'bg-orange-500 text-white shadow-lg' : 'text-gray-500 hover:bg-white/5'}`}>
+                                <Icon name={v.icon} size={16} />
+                                {v.label}
+                            </button>
+                        ))}
                     </div>
-                    <h1 className="text-2xl font-bold mb-1">FamilyWealth</h1>
-                    <p className="text-gray-500 text-sm mb-8">Gestión Financiera v4.0</p>
-                    <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Clave de Acceso" className="ios-input text-center text-xl mb-4 max-w-xs" />
-                    <button onClick={() => pass.length > 3 ? (!login(pass) && setErr('Error')) : setErr('Mínimo 4')} className="ios-btn bg-blue-600 text-white w-full max-w-xs">Entrar</button>
-                    {err && <p className="text-red-500 mt-4 text-xs">{err}</p>}
+
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div>
+                            <label className="text-[10px] text-gray-400 uppercase font-bold">Solicito (€)</label>
+                            <input type="number" value={amount} onChange={e=>setAmount(Number(e.target.value))} className="ios-input text-center font-bold text-lg"/>
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-gray-400 uppercase font-bold">Meses</label>
+                            <input type="number" value={months} onChange={e=>setMonths(Number(e.target.value))} className="ios-input text-center font-bold text-lg"/>
+                        </div>
+                    </div>
+
+                    {/* Resultado Visual */}
+                    <div className="bg-black/40 p-4 rounded-xl text-center mb-2">
+                        <p className="text-xs text-gray-400 mb-1">Cuota Mensual Estimada</p>
+                        <p className="text-3xl font-bold text-white">{cuota.toFixed(2)}€</p>
+                        <p className="text-[10px] text-orange-400 mt-1">Interés aplicado: {rate}%</p>
+                    </div>
+
+                    {/* Barra de "Dolor" (Intereses vs Capital) */}
+                    <div className="mt-4">
+                        <div className="flex justify-between text-[10px] mb-1">
+                            <span className="text-green-400">Capital Real ({amount}€)</span>
+                            <span className="text-red-400">Intereses ({totalInteres.toFixed(0)}€)</span>
+                        </div>
+                        <div className="h-3 bg-gray-700 rounded-full overflow-hidden flex">
+                            <div style={{width: `${100-porcInteres}%`}} className="bg-green-500 h-full"></div>
+                            <div style={{width: `${porcInteres}%`}} className="bg-red-500 h-full"></div>
+                        </div>
+                        <p className="text-[10px] text-gray-500 text-center mt-2">
+                            Devolverás un total de <b>{totalPagado.toFixed(0)}€</b>
+                        </p>
+                    </div>
                 </div>
             );
         };
 
-        // --- COMPONENTE: SUBSCRIPTIONS (NUEVO) ---
-        const SubscriptionManager = () => {
-            const { data, addItem, delItem } = useContext(AppContext);
-            const [form, setForm] = useState({ name: '', amount: '' });
-            const [isOpen, setIsOpen] = useState(false);
-
-            const totalMonthly = data.subs.reduce((acc, s) => acc + s.amount, 0);
-
-            const handleAdd = () => {
-                if(!form.name || !form.amount) return;
-                addItem('subs', { name: form.name, amount: parseFloat(form.amount) });
-                setForm({name:'', amount:''}); setIsOpen(false);
-            };
-
+        // --- LOGIN ---
+        const Login = () => {
+            const { login } = useContext(AppContext);
+            const [p, setP] = useState('');
             return (
-                <div className="ios-card bg-gray-900 border border-purple-500/20">
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 className="text-purple-400 font-bold flex items-center gap-2"><Icon name="zap" size={16}/> Gastos Fijos</h3>
-                            <p className="text-[10px] text-gray-500 mt-1">Suscripciones y Recibos</p>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-xl font-bold text-white">{totalMonthly.toFixed(2)}€</div>
-                            <div className="text-[10px] text-gray-400">/mes</div>
-                        </div>
-                    </div>
-
-                    {/* Botón Toggle Formulario */}
-                    {!isOpen ? (
-                        <button onClick={()=>setIsOpen(true)} className="w-full py-2 bg-white/5 rounded-xl text-xs text-gray-400 hover:text-white mb-4">+ Añadir Suscripción</button>
-                    ) : (
-                        <div className="flex gap-2 mb-4 animate-enter">
-                            <input placeholder="Nombre (ej: Netflix)" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="ios-input text-xs py-2"/>
-                            <input type="number" placeholder="€" value={form.amount} onChange={e=>setForm({...form, amount:e.target.value})} className="ios-input w-20 text-xs py-2 text-center"/>
-                            <button onClick={handleAdd} className="bg-purple-600 px-3 rounded-xl text-white"><Icon name="check" size={16}/></button>
-                        </div>
-                    )}
-
-                    {/* Lista */}
-                    <div className="space-y-2">
-                        {data.subs.map(s => (
-                            <div key={s.id} className="flex justify-between items-center bg-black/20 p-2 rounded-lg group">
-                                <span className="text-sm text-gray-300">{s.name}</span>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm font-mono font-bold">{s.amount}€</span>
-                                    <button onClick={()=>delItem('subs', s.id)} className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="trash" size={12}/></button>
-                                </div>
-                            </div>
-                        ))}
-                        {data.subs.length > 0 && (
-                            <div className="mt-3 pt-3 border-t border-white/5 text-center">
-                                <p className="text-[10px] text-gray-500">Proyección Anual: <span className="text-purple-400 font-bold">{(totalMonthly * 12).toFixed(2)}€</span></p>
-                            </div>
-                        )}
-                    </div>
+                <div className="h-screen flex flex-col items-center justify-center p-6 bg-black">
+                    <div className="w-16 h-16 bg-gray-800 rounded-2xl flex items-center justify-center mb-6"><Icon name="lock" color="#0A84FF" size={32}/></div>
+                    <h1 className="text-2xl font-bold mb-8">FamilyWealth</h1>
+                    <input type="password" value={p} onChange={e=>setP(e.target.value)} placeholder="Contraseña" className="ios-input text-center text-xl mb-4 w-64"/>
+                    <button onClick={()=>login(p)} className="btn-action w-64">Entrar</button>
                 </div>
             );
         };
 
         // --- DASHBOARD ---
         const Dashboard = () => {
-            const { data, addItem, delItem, exportData } = useContext(AppContext);
-            const [form, setForm] = useState({ desc: '', amount: '', type: 'out', catId: 'food' });
-            
-            // Cálculos
-            const income = data.txs.filter(t => t.type === 'in').reduce((acc, t) => acc + t.amount, 0);
-            const expense = data.txs.filter(t => t.type === 'out').reduce((acc, t) => acc + t.amount, 0);
-            const balance = income - expense;
+            const { data, add, del, exportData, importData } = useContext(AppContext);
+            const [form, setForm] = useState({ desc: '', amount: '', type: 'out', cat: '🍔' });
+            const fileInputRef = useRef(null);
 
-            const submit = () => {
-                if(!form.desc || !form.amount) return;
-                // Encontrar el emoji y label basados en el ID
-                const catInfo = CATS.find(c => c.id === form.catId) || CATS[7];
-                addItem('txs', { 
-                    ...form, 
-                    amount: parseFloat(form.amount),
-                    catIcon: catInfo.icon,
-                    catLabel: catInfo.label,
-                    catColor: catInfo.color
-                });
-                setForm({ ...form, desc: '', amount: '' });
+            const balance = data.txs.reduce((acc, t) => acc + (t.type==='in'?t.amount:-t.amount), 0);
+
+            // Importar archivo
+            const handleFile = (e) => {
+                if(e.target.files[0]) importData(e.target.files[0]);
             };
 
             return (
                 <div className="pb-32 max-w-xl mx-auto min-h-screen">
-                    {/* Header */}
-                    <nav className="p-6 flex justify-between items-center sticky top-0 bg-black/80 backdrop-blur-md z-20 border-b border-white/5">
-                        <span className="text-lg font-bold">FamilyWealth</span>
-                        <button onClick={exportData} className="text-gray-400"><Icon name="cloud-download" size={20}/></button>
-                    </nav>
-
-                    {/* Balance */}
-                    <div className="px-6 py-6 text-center">
-                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Disponible</p>
-                        <h1 className="text-5xl font-bold text-white mb-2">{balance.toFixed(2)}€</h1>
-                        <div className="flex justify-center gap-4 text-xs font-mono">
-                            <span className="text-green-500 bg-green-900/20 px-2 py-1 rounded">+{income}</span>
-                            <span className="text-red-500 bg-red-900/20 px-2 py-1 rounded">-{expense}</span>
+                    {/* Header con Menú de Archivos */}
+                    <div className="p-6 flex justify-between items-center sticky top-0 bg-black/80 backdrop-blur z-20">
+                        <span className="font-bold text-lg">FamilyWealth</span>
+                        <div className="flex gap-2">
+                            <button onClick={()=>fileInputRef.current.click()} className="p-2 bg-gray-800 rounded-full text-blue-400"><Icon name="upload-cloud" size={20}/></button>
+                            <button onClick={exportData} className="p-2 bg-gray-800 rounded-full text-green-400"><Icon name="download-cloud" size={20}/></button>
+                            <input type="file" ref={fileInputRef} onChange={handleFile} className="hidden" accept=".json"/>
                         </div>
                     </div>
 
+                    <div className="px-6 text-center mb-6">
+                        <p className="text-xs font-bold text-gray-500 uppercase">Patrimonio Neto</p>
+                        <h1 className="text-5xl font-bold text-white my-2">{balance.toFixed(2)}€</h1>
+                    </div>
+
                     <div className="px-4 space-y-4">
-                        
-                        {/* INPUT PRINCIPAL (CON EMOJIS) */}
+                        {/* Formulario Rápido */}
                         <div className="ios-card bg-gray-900/80 backdrop-blur border-blue-500/20 border">
-                            <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
-                                <button onClick={() => setForm({...form, type: 'in'})} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${form.type === 'in' ? 'bg-green-600 text-white' : 'text-gray-500'}`}>INGRESO</button>
-                                <button onClick={() => setForm({...form, type: 'out'})} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${form.type === 'out' ? 'bg-red-600 text-white' : 'text-gray-500'}`}>GASTO</button>
+                            <div className="flex gap-2 mb-3">
+                                <button onClick={()=>setForm({...form, type:'in'})} className={`flex-1 py-2 rounded-lg text-xs font-bold ${form.type==='in'?'bg-green-600':'bg-gray-800 text-gray-400'}`}>INGRESO</button>
+                                <button onClick={()=>setForm({...form, type:'out'})} className={`flex-1 py-2 rounded-lg text-xs font-bold ${form.type==='out'?'bg-red-600':'bg-gray-800 text-gray-400'}`}>GASTO</button>
                             </div>
-
-                            <div className="flex gap-3 mb-4">
-                                <input placeholder="Concepto" value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} className="ios-input flex-1" />
-                                <input type="number" placeholder="0.00" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className="ios-input w-24 text-center" />
+                            <div className="flex gap-2 mb-3">
+                                <input placeholder="Concepto" value={form.desc} onChange={e=>setForm({...form, desc:e.target.value})} className="ios-input flex-1"/>
+                                <input type="number" placeholder="0.00" value={form.amount} onChange={e=>setForm({...form, amount:e.target.value})} className="ios-input w-24 text-center"/>
                             </div>
-
-                            {/* SELECTOR EMOJIS (SOLO PARA GASTOS) */}
                             {form.type === 'out' && (
-                                <div className="mb-4">
-                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">Categoría</p>
-                                    <div className="flex justify-between overflow-x-auto hide-scroll pb-2 gap-2">
-                                        {CATS.map(c => (
-                                            <button key={c.id} onClick={() => setForm({...form, catId: c.id})} className={`emoji-btn flex flex-col items-center gap-1 p-2 min-w-[50px] ${form.catId === c.id ? 'active' : ''}`}>
-                                                <span className="text-2xl">{c.icon}</span>
-                                                <span className="text-[9px] text-gray-400">{c.label}</span>
-                                            </button>
-                                        ))}
-                                    </div>
+                                <div className="flex gap-2 overflow-x-auto hide-scroll pb-2 mb-2">
+                                    {['🍔','🏠','🚗','🎉','💊','🛍️','🐾'].map(emoji => (
+                                        <button key={emoji} onClick={()=>setForm({...form, cat:emoji})} className={`p-3 rounded-xl text-xl transition-all ${form.cat===emoji?'bg-white/20 scale-110':'bg-white/5 opacity-50'}`}>{emoji}</button>
+                                    ))}
                                 </div>
                             )}
-
-                            <button onClick={submit} className="ios-btn w-full bg-white text-black hover:bg-gray-200">
-                                Registrar Movimiento
-                            </button>
+                            <button onClick={()=>{if(form.desc && form.amount) {add('txs', {...form, amount: parseFloat(form.amount)}); setForm({...form, desc:'', amount:''})}}} className="btn-action bg-white text-black hover:bg-gray-200">Añadir</button>
                         </div>
 
-                        {/* NUEVO: GESTOR DE SUSCRIPCIONES */}
-                        <SubscriptionManager />
+                        {/* Nuevo Simulador */}
+                        <SmartSimulator />
 
-                        {/* HISTORIAL */}
+                        {/* Historial */}
                         <div className="ios-card">
-                            <h3 className="text-xs uppercase font-bold text-gray-500 mb-4">Actividad Reciente</h3>
-                            <div className="space-y-4">
-                                {data.txs.slice(0, 8).map(t => (
-                                    <div key={t.id} className="flex justify-between items-center group animate-enter">
+                            <h3 className="text-xs font-bold text-gray-500 mb-4 uppercase">Movimientos</h3>
+                            <div className="space-y-3">
+                                {data.txs.slice(0, 10).map(t => (
+                                    <div key={t.id} className="flex justify-between items-center bg-black/20 p-2 rounded-lg">
                                         <div className="flex items-center gap-3">
-                                            {/* Icono inteligente: Emoji si existe, flecha si no */}
-                                            <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-xl">
-                                                {t.type === 'in' ? '💰' : (t.catIcon || '💸')}
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-sm text-gray-200">{t.desc}</p>
-                                                <p className="text-[10px] text-gray-500 uppercase">{t.catLabel || 'General'}</p>
-                                            </div>
+                                            <div className="text-2xl">{t.type==='in'?'💰':t.cat}</div>
+                                            <div><p className="font-bold text-sm">{t.desc}</p></div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className={`font-mono font-bold ${t.type === 'in' ? 'text-green-400' : 'text-white'}`}>
-                                                {t.type === 'in' ? '+' : '-'}{t.amount.toFixed(2)}€
-                                            </span>
-                                            <button onClick={() => delItem('txs', t.id)} className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Icon name="x" size={14}/>
-                                            </button>
+                                            <span className={`font-mono font-bold ${t.type==='in'?'text-green-400':'text-white'}`}>{t.type==='in'?'+':'-'}{t.amount}€</span>
+                                            <button onClick={()=>del('txs', t.id)} className="text-gray-600"><Icon name="trash-2" size={14}/></button>
                                         </div>
                                     </div>
                                 ))}
-                                {data.txs.length === 0 && <p className="text-center text-gray-600 text-sm py-4">Todo tranquilo por aquí 🦗</p>}
+                                {data.txs.length===0 && <p className="text-center text-gray-500 text-xs">Sin datos</p>}
                             </div>
                         </div>
-
                     </div>
                 </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<AppProvider><Dashboard /></AppProvider>);
+        root.render(<AppProvider><AppContext.Consumer>{({user}) => user ? <Dashboard/> : <Login/>}</AppContext.Consumer></AppProvider>);
     </script>
 </body>
 </html>
