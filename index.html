@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FamilyWealth Ultimate</title>
+    <title>FamilyWealth Ultimate Pro</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
 
@@ -19,7 +19,7 @@
         
         /* UI Components Estilo Premium */
         .ios-card { background: #1C1C1E; border-radius: 22px; padding: 20px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-        .ios-input { background: #2C2C2E; border: 1px solid #3A3A3C; border-radius: 12px; padding: 14px; color: white; width: 100%; outline: none; font-size: 16px; transition: all 0.2s; }
+        .ios-input { background: #2C2C2E; border: 1px solid #3A3A3C; border-radius: 12px; padding: 12px; color: white; width: 100%; outline: none; font-size: 15px; transition: all 0.2s; }
         .ios-input:focus { border-color: #0A84FF; background: #323234; }
         .ios-btn { border-radius: 14px; font-weight: 600; padding: 16px; transition: transform 0.1s, opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .ios-btn:active { transform: scale(0.97); opacity: 0.8; }
@@ -29,7 +29,7 @@
             background: linear-gradient(180deg, #FFFFFF 0%, #A0A0A0 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0px 2px 10px rgba(255,255,255,0.1);
+            text-shadow: 0px 2px 10px rgba(255,255,255,0.15);
         }
 
         /* Utility */
@@ -60,12 +60,12 @@
             { id: 'misc', icon: '📦', label: 'Otros', color: 'text-gray-400' }
         ];
 
-        const Icon = ({ name, size = 20, className="" }) => {
+        const Icon = ({ name, size = 18, className="" }) => {
             useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, [name]);
             return <i data-lucide={name} width={size} height={size} className={className}></i>;
         };
 
-        // --- CONTEXTO (Con Importar/Exportar) ---
+        // --- CONTEXTO ---
         const AppContext = createContext();
 
         const AppProvider = ({ children }) => {
@@ -74,7 +74,7 @@
 
             const login = (password) => {
                 try {
-                    const encrypted = localStorage.getItem('fw_ultimate_db');
+                    const encrypted = localStorage.getItem('fw_ultimate_pro_db');
                     if (!encrypted) {
                         const initial = { txs: [], subs: [], goals: [] };
                         setUser({ key: password }); setData(initial); save(initial, password);
@@ -82,7 +82,11 @@
                     }
                     const bytes = CryptoJS.AES.decrypt(encrypted, password);
                     const decrypted = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-                    if(!decrypted.subs) decrypted.subs = []; // Migración
+                    
+                    // Migración segura
+                    if(!decrypted.subs) decrypted.subs = [];
+                    if(!decrypted.goals) decrypted.goals = [];
+                    
                     setUser({ key: password }); setData(decrypted);
                     return true;
                 } catch (e) { return false; }
@@ -91,7 +95,7 @@
             const save = (newData, key = user?.key) => {
                 if(!key) return;
                 const encrypted = CryptoJS.AES.encrypt(JSON.stringify(newData), key).toString();
-                localStorage.setItem('fw_ultimate_db', encrypted);
+                localStorage.setItem('fw_ultimate_pro_db', encrypted);
             };
 
             const addItem = (type, item) => {
@@ -100,6 +104,11 @@
             };
             const delItem = (type, id) => {
                 const updated = { ...data, [type]: data[type].filter(i => i.id !== id) };
+                setData(updated); save(updated);
+            };
+            const updateItem = (type, updatedItem) => {
+                const updatedList = data[type].map(i => i.id === updatedItem.id ? updatedItem : i);
+                const updated = { ...data, [type]: updatedList };
                 setData(updated); save(updated);
             };
 
@@ -126,7 +135,7 @@
             };
 
             return (
-                <AppContext.Provider value={{ user, login, data, addItem, delItem, exportData, importData }}>
+                <AppContext.Provider value={{ user, login, data, addItem, delItem, updateItem, exportData, importData }}>
                     {children}
                 </AppContext.Provider>
             );
@@ -143,10 +152,70 @@
                         <Icon name="wallet" size={36} className="text-blue-500" />
                     </div>
                     <h1 className="text-2xl font-bold mb-1 silver-text">FamilyWealth</h1>
-                    <p className="text-gray-500 text-sm mb-8">Ultimate Edition</p>
+                    <p className="text-gray-500 text-sm mb-8">Ultimate Pro</p>
                     <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Clave de Acceso" className="ios-input text-center text-xl mb-4 max-w-xs" />
                     <button onClick={() => pass.length > 3 ? (!login(pass) && setErr('Error')) : setErr('Mínimo 4')} className="ios-btn bg-blue-600 text-white w-full max-w-xs">Entrar</button>
                     {err && <p className="text-red-500 mt-4 text-xs">{err}</p>}
+                </div>
+            );
+        };
+
+        // --- COMPONENTE: AHORRO (GOALS) ---
+        const SavingsGoals = () => {
+            const { data, addItem, delItem } = useContext(AppContext);
+            const [form, setForm] = useState({ name: '', target: '', current: '' });
+            const [isOpen, setIsOpen] = useState(false);
+
+            const handleAdd = () => {
+                if(!form.name || !form.target) return;
+                addItem('goals', { 
+                    name: form.name, 
+                    target: parseFloat(form.target), 
+                    current: parseFloat(form.current) || 0 
+                });
+                setForm({name:'', target:'', current:''}); setIsOpen(false);
+            };
+
+            return (
+                <div className="ios-card bg-gray-900 border border-yellow-500/30">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-yellow-500 font-bold flex items-center gap-2"><Icon name="piggy-bank" size={16}/> Metas Ahorro</h3>
+                        <button onClick={()=>setIsOpen(!isOpen)} className="text-yellow-500 bg-yellow-500/10 p-2 rounded-lg text-xs font-bold">
+                            {isOpen ? 'Cerrar' : '+ Crear'}
+                        </button>
+                    </div>
+
+                    {isOpen && (
+                        <div className="bg-black/40 p-3 rounded-xl mb-4 animate-enter border border-white/10">
+                            <input placeholder="Nombre Meta (ej: Viaje)" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="ios-input text-xs mb-2"/>
+                            <div className="flex gap-2">
+                                <input type="number" placeholder="Objetivo €" value={form.target} onChange={e=>setForm({...form, target:e.target.value})} className="ios-input text-xs"/>
+                                <input type="number" placeholder="Ya tengo €" value={form.current} onChange={e=>setForm({...form, current:e.target.value})} className="ios-input text-xs"/>
+                            </div>
+                            <button onClick={handleAdd} className="w-full mt-2 bg-yellow-600 text-black font-bold text-xs py-2 rounded-lg">Guardar Meta</button>
+                        </div>
+                    )}
+
+                    <div className="space-y-4">
+                        {data.goals.map(g => {
+                            const percent = Math.min(100, (g.current / g.target) * 100);
+                            return (
+                                <div key={g.id} className="group">
+                                    <div className="flex justify-between text-xs mb-1 text-gray-300">
+                                        <span>{g.name}</span>
+                                        <div className="flex gap-2">
+                                            <span className="font-bold text-white">{g.current}€ / {g.target}€</span>
+                                            <button onClick={()=>delItem('goals', g.id)} className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="x" size={12}/></button>
+                                        </div>
+                                    </div>
+                                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                        <div style={{width: `${percent}%`}} className="bg-gradient-to-r from-yellow-600 to-yellow-400 h-full rounded-full transition-all duration-500"></div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                        {data.goals.length === 0 && <p className="text-[10px] text-gray-500 text-center">Sin metas activas</p>}
+                    </div>
                 </div>
             );
         };
@@ -169,15 +238,13 @@
                     <div className="flex justify-between items-start mb-4">
                         <div>
                             <h3 className="text-purple-400 font-bold flex items-center gap-2"><Icon name="zap" size={16}/> Gastos Fijos</h3>
-                            <p className="text-[10px] text-gray-500 mt-1">Suscripciones y Recibos</p>
                         </div>
                         <div className="text-right">
-                            <div className="text-xl font-bold text-white">{totalMonthly.toFixed(2)}€</div>
-                            <div className="text-[10px] text-gray-400">/mes</div>
+                            <div className="text-white font-bold">{totalMonthly.toFixed(2)}€/mes</div>
                         </div>
                     </div>
                     {!isOpen ? (
-                        <button onClick={()=>setIsOpen(true)} className="w-full py-2 bg-white/5 rounded-xl text-xs text-gray-400 hover:text-white mb-4">+ Añadir Suscripción</button>
+                        <button onClick={()=>setIsOpen(true)} className="w-full py-2 bg-white/5 rounded-xl text-xs text-gray-400 hover:text-white mb-4">+ Añadir</button>
                     ) : (
                         <div className="flex gap-2 mb-4 animate-enter">
                             <input placeholder="Nombre" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="ios-input text-xs py-2"/>
@@ -200,7 +267,7 @@
             );
         };
 
-        // --- COMPONENTE: SIMULADOR INTELIGENTE (ESTILO PRO) ---
+        // --- COMPONENTE: SIMULADOR (CON INTERÉS MANUAL) ---
         const SmartSimulator = () => {
             const [amount, setAmount] = useState(15000);
             const [months, setMonths] = useState(48);
@@ -228,6 +295,7 @@
                 <div className="ios-card bg-gray-900 border border-orange-500/30">
                     <h3 className="text-orange-500 font-bold mb-4 flex gap-2 items-center"><Icon name="calculator" size={16}/> Simulador</h3>
                     
+                    {/* Botones Rápidos */}
                     <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
                         {Object.entries(presets).map(([k, v]) => (
                             <button key={k} onClick={() => setPreset(k)} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all flex flex-col items-center gap-1 ${type === k ? 'bg-orange-500 text-white' : 'text-gray-500 hover:bg-white/5'}`}>
@@ -244,6 +312,15 @@
                         <div>
                             <label className="text-[9px] text-gray-400 uppercase font-bold">Meses</label>
                             <input type="number" value={months} onChange={e=>setMonths(Number(e.target.value))} className="ios-input text-center font-bold text-sm py-2"/>
+                        </div>
+                    </div>
+
+                    {/* INPUT DE INTERÉS MANUAL */}
+                    <div className="mb-4">
+                        <label className="text-[9px] text-gray-400 uppercase font-bold">Interés Anual (%)</label>
+                        <div className="flex items-center gap-2">
+                             <input type="number" value={rate} onChange={e=>{setRate(Number(e.target.value)); setType('custom');}} className="ios-input text-center font-bold text-sm py-2 text-orange-400 border-orange-500/20"/>
+                             <span className="text-xs text-gray-500">{type === 'custom' ? '(Manual)' : '(Auto)'}</span>
                         </div>
                     </div>
 
@@ -285,12 +362,16 @@
 
             return (
                 <div className="pb-32 max-w-xl mx-auto min-h-screen">
-                    {/* Header con Botones de Archivo */}
+                    {/* Header con Texto en Nubes */}
                     <nav className="p-6 flex justify-between items-center sticky top-0 bg-black/80 backdrop-blur-md z-20 border-b border-white/5">
                         <span className="text-lg font-bold">FamilyWealth</span>
-                        <div className="flex gap-3">
-                            <button onClick={()=>fileRef.current.click()} className="text-gray-400 hover:text-blue-400"><Icon name="upload-cloud" size={20}/></button>
-                            <button onClick={exportData} className="text-gray-400 hover:text-green-400"><Icon name="download-cloud" size={20}/></button>
+                        <div className="flex gap-2">
+                            <button onClick={()=>fileRef.current.click()} className="flex items-center gap-1 bg-gray-800 px-3 py-2 rounded-full text-[10px] font-bold text-blue-400 hover:bg-gray-700 transition">
+                                <Icon name="upload-cloud" size={14}/> <span>Importar</span>
+                            </button>
+                            <button onClick={exportData} className="flex items-center gap-1 bg-gray-800 px-3 py-2 rounded-full text-[10px] font-bold text-green-400 hover:bg-gray-700 transition">
+                                <Icon name="download-cloud" size={14}/> <span>Exportar</span>
+                            </button>
                             <input type="file" ref={fileRef} onChange={e => e.target.files[0] && importData(e.target.files[0])} className="hidden" accept=".json"/>
                         </div>
                     </nav>
@@ -333,8 +414,11 @@
                                 </div>
                             )}
 
-                            <button onClick={submit} className="ios-btn w-full bg-white text-black hover:bg-gray-200">Registrar Movimiento</button>
+                            <button onClick={submit} className="ios-btn w-full bg-white text-black hover:bg-gray-200">Registrar</button>
                         </div>
+
+                        {/* AHORRO (NUEVO) */}
+                        <SavingsGoals />
 
                         {/* MÓDULOS EXTRA */}
                         <SubscriptionManager />
