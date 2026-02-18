@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FamilyWealth</title>
+    <title>FamilyWealth Pro</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
 
@@ -14,314 +14,395 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        bg: '#000000',
-                        card: '#1C1C1E',
-                        primary: '#0A84FF', // iOS Blue
-                        success: '#30D158', // iOS Green
-                        danger: '#FF453A',  // iOS Red
-                        warning: '#FF9F0A', // iOS Orange
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body { background-color: #000; color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
-        .ios-card { background: #1C1C1E; border-radius: 18px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); }
-        .ios-input { background: #2C2C2E; border: none; border-radius: 10px; padding: 12px; color: white; width: 100%; outline: none; }
-        .ios-btn { border-radius: 12px; font-weight: 600; padding: 14px; transition: opacity 0.2s; }
-        .ios-btn:active { opacity: 0.7; }
+        body { background-color: #000; color: #f5f5f7; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        /* Gráfico Donut CSS Puro - Indestructible */
-        .pie-chart {
-            width: 140px; height: 140px; border-radius: 50%;
-            background: conic-gradient(var(--c1, #FF453A) var(--p1, 0%), var(--c2, #FF9F0A) 0 var(--p2, 0%), var(--c3, #30D158) 0 var(--p3, 100%));
-            position: relative; margin: 0 auto;
+        /* Componentes UI */
+        .ios-card { background: #1C1C1E; border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 16px; }
+        .ios-input { background: #2C2C2E; border: 1px solid #3A3A3C; border-radius: 12px; padding: 14px; color: white; width: 100%; outline: none; font-size: 16px; transition: border-color 0.2s; }
+        .ios-input:focus { border-color: #0A84FF; }
+        .ios-btn { border-radius: 14px; font-weight: 600; padding: 16px; transition: transform 0.1s, opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .ios-btn:active { transform: scale(0.98); opacity: 0.8; }
+        
+        /* Gráfico CSS Puro */
+        .donut-chart {
+            width: 160px; height: 160px; border-radius: 50%;
+            background: conic-gradient(var(--c1, #FF453A) 0 var(--p1, 0%), var(--c2, #FF9F0A) 0 var(--p2, 0%), var(--c3, #30D158) 0 var(--p3, 100%));
+            position: relative; margin: 0 auto; display: flex; align-items: center; justify-content: center;
         }
-        .pie-hole {
-            position: absolute; top: 20px; left: 20px; width: 100px; height: 100px;
-            background: #1C1C1E; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 20px;
+        .donut-hole {
+            width: 120px; height: 120px; background: #1C1C1E; border-radius: 50%; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2;
         }
 
-        /* Pantalla de carga manual */
-        #loading-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        /* Utilidades */
+        .badge { padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        .scroll-hide::-webkit-scrollbar { display: none; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
-    
-    <div id="loading-screen">
-        <div class="text-center">
-            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-white mx-auto mb-4"></div>
-            <p class="text-gray-400 text-sm">Cargando Bóveda...</p>
-        </div>
-    </div>
-
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, createContext, useContext } = React;
 
-        // --- SISTEMA DE ICONOS ---
-        const Icon = ({ name, size = 20, color = "white" }) => {
+        // --- ICONOS ---
+        const Icon = ({ name, size = 20, color = "currentColor", className="" }) => {
             useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, [name]);
-            return <i data-lucide={name} style={{ width: size, height: size, color: color }}></i>;
+            return <i data-lucide={name} width={size} height={size} style={{color}} className={className}></i>;
         };
 
-        // --- CONTEXTO (BASE DE DATOS) ---
+        // --- CONTEXTO GLOBAL ---
         const AppContext = createContext();
 
         const AppProvider = ({ children }) => {
             const [user, setUser] = useState(null);
-            const [txs, setTxs] = useState([]); // Transacciones
+            const [data, setData] = useState({ txs: [], goals: [] }); // Ahora guardamos metas también
 
-            // Login / Cargar
             const login = (password) => {
                 try {
-                    const encrypted = localStorage.getItem('family_db_v2');
+                    const encrypted = localStorage.getItem('fw_v3_db');
                     if (!encrypted) {
-                        setUser(password);
-                        setTxs([]);
-                        save([], password);
+                        setUser({ key: password });
+                        setData({ txs: [], goals: [] });
+                        save({ txs: [], goals: [] }, password);
                         return true;
                     }
                     const bytes = CryptoJS.AES.decrypt(encrypted, password);
-                    const data = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-                    setUser(password);
-                    setTxs(data);
+                    const decrypted = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+                    setUser({ key: password });
+                    setData(decrypted);
                     return true;
-                } catch (e) {
-                    return false;
-                }
+                } catch (e) { return false; }
             };
 
-            const save = (data, key = user) => {
-                const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), key).toString();
-                localStorage.setItem('family_db_v2', encrypted);
+            const save = (newData, key = user.key) => {
+                const encrypted = CryptoJS.AES.encrypt(JSON.stringify(newData), key).toString();
+                localStorage.setItem('fw_v3_db', encrypted);
             };
 
             const addTx = (tx) => {
-                const newTxs = [{ ...tx, id: Date.now() }, ...txs];
-                setTxs(newTxs);
-                save(newTxs);
+                const newData = { ...data, txs: [{...tx, id: Date.now()}, ...data.txs] };
+                setData(newData); save(newData);
             };
 
             const delTx = (id) => {
-                const newTxs = txs.filter(t => t.id !== id);
-                setTxs(newTxs);
-                save(newTxs);
+                const newData = { ...data, txs: data.txs.filter(t => t.id !== id) };
+                setData(newData); save(newData);
+            };
+
+            const addGoal = (goal) => {
+                const newData = { ...data, goals: [...data.goals, {...goal, id: Date.now()}] };
+                setData(newData); save(newData);
+            };
+
+             const deleteGoal = (id) => {
+                const newData = { ...data, goals: data.goals.filter(g => g.id !== id) };
+                setData(newData); save(newData);
+            };
+
+            const exportData = () => {
+                const dataStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `backup_familywealth_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
             };
 
             return (
-                <AppContext.Provider value={{ user, login, txs, addTx, delTx }}>
+                <AppContext.Provider value={{ user, login, data, addTx, delTx, addGoal, deleteGoal, exportData }}>
                     {children}
                 </AppContext.Provider>
             );
         };
 
-        // --- VISTA 1: LOGIN ---
-        const LoginScreen = () => {
+        // --- LOGIN ---
+        const Login = () => {
             const { login } = useContext(AppContext);
             const [pass, setPass] = useState('');
             const [err, setErr] = useState('');
 
-            const handleLogin = () => {
-                if(pass.length < 4) return setErr("Mínimo 4 caracteres");
-                if(!login(pass)) setErr("Contraseña incorrecta");
-            };
-
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-black">
-                    <div className="w-20 h-20 bg-gray-900 rounded-3xl flex items-center justify-center mb-6 border border-gray-800">
-                        <Icon name="lock" size={32} color="#0A84FF" />
-                    </div>
-                    <h1 className="text-3xl font-bold mb-2">FamilyWealth</h1>
-                    <p className="text-gray-500 mb-8">Bóveda Privada Local</p>
-                    
-                    <div className="w-full max-w-sm space-y-4">
-                        <input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Clave Maestra" className="ios-input text-center text-xl" />
-                        {err && <p className="text-red-500 text-sm text-center">{err}</p>}
-                        <button onClick={handleLogin} className="ios-btn bg-primary text-white w-full">Entrar</button>
+                <div className="h-screen flex flex-col items-center justify-center p-6 bg-black relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,#1a1a1a,transparent_70%)]"></div>
+                    <div className="z-10 w-full max-w-xs text-center">
+                        <div className="mx-auto w-20 h-20 bg-gray-900 rounded-3xl border border-gray-800 flex items-center justify-center mb-8 shadow-2xl shadow-blue-900/20">
+                            <Icon name="shield-check" size={40} color="#0A84FF" />
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2 text-white">FamilyWealth</h1>
+                        <p className="text-gray-500 mb-8 text-sm">Finanzas Encriptadas v3.0</p>
+                        <input type="password" value={pass} onChange={e => {setPass(e.target.value); setErr('')}} placeholder="Tu Clave Maestra" className="ios-input text-center text-xl mb-4 bg-gray-900 border-gray-800" />
+                        {err && <p className="text-red-500 text-xs mb-4">{err}</p>}
+                        <button onClick={() => pass.length > 3 ? (!login(pass) && setErr('Clave incorrecta')) : setErr('Mínimo 4 caracteres')} className="ios-btn bg-[#0A84FF] text-white w-full hover:bg-blue-600">
+                            Desbloquear
+                        </button>
                     </div>
                 </div>
             );
         };
 
-        // --- VISTA 2: DASHBOARD ---
-        const Dashboard = () => {
-            const { txs, addTx, delTx } = useContext(AppContext);
-            const [tab, setTab] = useState('resumen');
-            
-            // Cálculos
-            const totalIngresos = txs.filter(t => t.type === 'in').reduce((acc, t) => acc + t.amount, 0);
-            const totalGastos = txs.filter(t => t.type === 'out').reduce((acc, t) => acc + t.amount, 0);
-            const balance = totalIngresos - totalGastos;
+        // --- SIMULADOR AVANZADO (LO QUE PEDISTE) ---
+        const LoanSimulator = () => {
+            // Estado para inputs manuales
+            const [amount, setAmount] = useState(15000);
+            const [months, setMonths] = useState(24);
+            const [rate, setRate] = useState(5.50);
+            const [showTable, setShowTable] = useState(false);
 
-            // Datos para Gráfico CSS
-            const gastosCat = txs.filter(t => t.type === 'out').reduce((acc, t) => {
-                acc[t.cat] = (acc[t.cat] || 0) + t.amount;
-                return acc;
-            }, { needs: 0, wants: 0, save: 0 });
-            
-            // Porcentajes para el gráfico Conic
-            const totalG = totalGastos || 1;
-            const p1 = (gastosCat.needs / totalG) * 100; // Necesidades (Rojo)
-            const p2 = p1 + (gastosCat.wants / totalG) * 100; // Caprichos (Naranja)
-            // El resto es Ahorro (Verde)
+            const result = useMemo(() => {
+                const r = (rate / 100) / 12;
+                const m = Math.max(1, months); // Evitar división por cero
+                const cuota = amount * ((r * Math.pow(1+r, m)) / (Math.pow(1+r, m) - 1));
+                
+                // Generar tabla
+                let balance = amount;
+                const table = [];
+                for(let i=1; i<=Math.min(m, 60); i++) { // Limitamos visualización a 60 meses para no saturar
+                    const interest = balance * r;
+                    const capital = cuota - interest;
+                    balance -= capital;
+                    table.push({ i, interest, capital, balance });
+                }
+                return { cuota: isNaN(cuota) ? 0 : cuota, table, total: cuota * m };
+            }, [amount, months, rate]);
 
             return (
-                <div className="pb-24 max-w-2xl mx-auto">
-                    {/* HEADER */}
-                    <div className="pt-10 pb-6 px-6 sticky top-0 bg-black/80 backdrop-blur-md z-10 border-b border-white/5">
-                        <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-1">Patrimonio Neto</p>
-                        <h1 className="text-5xl font-bold">{balance.toFixed(2)}€</h1>
+                <div className="ios-card bg-gray-900 border border-orange-500/20">
+                    <div className="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 className="text-orange-500 font-bold flex items-center gap-2"><Icon name="calculator" size={18}/> Simulador Pro</h3>
+                            <p className="text-[10px] text-gray-500 mt-1">Calculadora Hipoteca / Préstamo</p>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-3xl font-bold text-white">{result.cuota.toFixed(2)}€</div>
+                            <div className="text-[10px] text-gray-400">Cuota Mensual</div>
+                        </div>
                     </div>
 
-                    <div className="p-4 space-y-4">
-                        
-                        {/* 1. GRÁFICO GASTOS (CSS PURO) */}
-                        <div className="ios-card flex items-center justify-between">
-                            <div>
-                                <h3 className="font-bold mb-4">Regla 50/30/20</h3>
-                                <div className="space-y-2 text-xs">
-                                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-danger"></div> Necesidades ({Math.round((gastosCat.needs/totalG)*100)}%)</div>
-                                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-warning"></div> Caprichos ({Math.round((gastosCat.wants/totalG)*100)}%)</div>
-                                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-success"></div> Ahorro ({Math.round((gastosCat.save/totalG)*100)}%)</div>
-                                </div>
-                            </div>
-                            <div className="pie-chart" style={{
-                                '--p1': `${p1}%`, 
-                                '--p2': `${p2}%`, 
-                                '--p3': '100%'
-                            }}>
-                                <div className="pie-hole">
-                                    <Icon name="pie-chart" size={24} color="#555" />
-                                </div>
+                    {/* INPUTS MANUALES */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label className="text-xs text-gray-500 ml-1 mb-1 block">Importe (€)</label>
+                            <input type="number" value={amount} onChange={e => setAmount(Number(e.target.value))} className="ios-input text-center font-mono" />
+                        </div>
+                        <div>
+                            <label className="text-xs text-gray-500 ml-1 mb-1 block">Plazo (Meses)</label>
+                            <input type="number" value={months} onChange={e => setMonths(Number(e.target.value))} className="ios-input text-center font-mono" />
+                        </div>
+                    </div>
+                    <div className="mb-4">
+                         <label className="text-xs text-gray-500 ml-1 mb-1 block">Interés Anual (%)</label>
+                         <input type="number" step="0.1" value={rate} onChange={e => setRate(Number(e.target.value))} className="ios-input text-center font-mono" />
+                    </div>
+
+                    {/* BOTÓN TOGGLE TABLA */}
+                    <button onClick={() => setShowTable(!showTable)} className="w-full py-2 bg-white/5 rounded-lg text-xs text-gray-400 hover:text-white transition-colors mb-2">
+                        {showTable ? 'Ocultar Tabla' : 'Ver Tabla de Amortización'}
+                    </button>
+
+                    {/* TABLA DESPLEGABLE */}
+                    {showTable && (
+                        <div className="bg-black/40 rounded-xl overflow-hidden mt-2 fade-in">
+                            <table className="w-full text-[10px] text-gray-400">
+                                <thead className="bg-white/5 text-white">
+                                    <tr><th className="p-2 text-left">Mes</th><th className="p-2">Interés</th><th className="p-2">Capital</th><th className="p-2 text-right">Pendiente</th></tr>
+                                </thead>
+                                <tbody>
+                                    {result.table.map(row => (
+                                        <tr key={row.i} className="border-t border-white/5">
+                                            <td className="p-2">{row.i}</td>
+                                            <td className="p-2 text-red-400">{row.interest.toFixed(2)}</td>
+                                            <td className="p-2 text-green-400">{row.capital.toFixed(2)}</td>
+                                            <td className="p-2 text-right">{Math.max(0, row.balance).toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {months > 60 && <p className="text-center text-[10px] p-2 text-gray-600">... mostrados primeros 60 meses</p>}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- COMPONENTE: METAS DE AHORRO ---
+        const Goals = () => {
+             const { data, addGoal, deleteGoal } = useContext(AppContext);
+             const [form, setForm] = useState({ name: '', target: '' });
+             const [isOpen, setIsOpen] = useState(false);
+
+             const handleAdd = () => {
+                 if(!form.name || !form.target) return;
+                 addGoal({ name: form.name, target: parseFloat(form.target), saved: 0 }); // saved podría venir de un cálculo real
+                 setForm({name:'', target:''}); setIsOpen(false);
+             };
+
+             // Calculamos ahorro disponible real (Balance total)
+             const totalIncome = data.txs.filter(t=>t.type==='in').reduce((a,b)=>a+b.amount,0);
+             const totalExpense = data.txs.filter(t=>t.type==='out').reduce((a,b)=>a+b.amount,0);
+             const currentSavings = totalIncome - totalExpense;
+
+             return (
+                <div className="ios-card">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-bold text-purple-400 flex items-center gap-2"><Icon name="target" size={18}/> Metas</h3>
+                        <button onClick={() => setIsOpen(!isOpen)} className="text-xs bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full">+ Nueva</button>
+                    </div>
+
+                    {isOpen && (
+                        <div className="mb-4 bg-white/5 p-3 rounded-xl fade-in space-y-2">
+                            <input placeholder="Nombre (ej: Coche)" value={form.name} onChange={e=>setForm({...form, name: e.target.value})} className="ios-input text-sm py-2"/>
+                            <div className="flex gap-2">
+                                <input type="number" placeholder="Objetivo €" value={form.target} onChange={e=>setForm({...form, target: e.target.value})} className="ios-input text-sm py-2"/>
+                                <button onClick={handleAdd} className="bg-purple-600 rounded-lg px-4 text-white"><Icon name="check" size={16}/></button>
                             </div>
                         </div>
+                    )}
 
-                        {/* 2. AÑADIR RÁPIDO */}
-                        <AddTransactionForm onAdd={addTx} />
-
-                        {/* 3. SIMULADOR PRÉSTAMO */}
-                        <LoanSimulator />
-
-                        {/* 4. LISTA DE MOVIMIENTOS */}
-                        <div className="ios-card">
-                            <h3 className="font-bold mb-4 text-gray-400 text-sm">Últimos Movimientos</h3>
-                            {txs.length === 0 ? <p className="text-center text-gray-600 text-sm py-4">Sin datos aún</p> : 
-                            <div className="space-y-3">
-                                {txs.slice(0, 10).map(t => (
-                                    <div key={t.id} className="flex justify-between items-center border-b border-white/5 pb-2 last:border-0">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${t.type === 'in' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-                                                <Icon name={t.type === 'in' ? 'arrow-up' : 'arrow-down'} size={14} color={t.type === 'in' ? '#30D158' : '#FF453A'} />
-                                            </div>
-                                            <div>
-                                                <div className="font-medium text-sm">{t.desc}</div>
-                                                <div className="text-[10px] text-gray-500 uppercase">{t.cat}</div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <span className={t.type === 'in' ? 'text-green-500' : 'text-white'}>
-                                                {t.type === 'in' ? '+' : '-'}{t.amount}€
-                                            </span>
-                                            <button onClick={() => delTx(t.id)} className="text-gray-600"><Icon name="trash-2" size={14}/></button>
-                                        </div>
+                    <div className="space-y-4">
+                        {data.goals.length === 0 ? <p className="text-gray-600 text-xs text-center">Define un objetivo financiero.</p> : 
+                        data.goals.map(g => {
+                            const progress = Math.min(100, (currentSavings / g.target) * 100);
+                            return (
+                                <div key={g.id} className="relative group">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="text-white font-medium">{g.name}</span>
+                                        <span className="text-purple-300">{progress.toFixed(0)}%</span>
                                     </div>
-                                ))}
-                            </div>}
-                        </div>
+                                    <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                                        <div className="h-full bg-gradient-to-r from-purple-600 to-indigo-500 transition-all duration-500" style={{width: `${progress}%`}}></div>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                                        <span>{currentSavings.toFixed(0)}€ act.</span>
+                                        <span>{g.target}€ obj.</span>
+                                    </div>
+                                    <button onClick={()=>deleteGoal(g.id)} className="absolute -right-2 -top-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="x" size={10}/></button>
+                                </div>
+                            )
+                        })}
                     </div>
                 </div>
-            );
-        };
+             )
+        }
 
-        // --- COMPONENTES AUXILIARES ---
-        const AddTransactionForm = ({ onAdd }) => {
+        // --- DASHBOARD ---
+        const Dashboard = () => {
+            const { data, addTx, delTx, exportData } = useContext(AppContext);
             const [form, setForm] = useState({ desc: '', amount: '', type: 'out', cat: 'needs' });
             
+            // Cálculos
+            const income = data.txs.filter(t => t.type === 'in').reduce((acc, t) => acc + t.amount, 0);
+            const expense = data.txs.filter(t => t.type === 'out').reduce((acc, t) => acc + t.amount, 0);
+            const balance = income - expense;
+
+            // Gráfico
+            const cats = data.txs.filter(t => t.type === 'out').reduce((acc, t) => { acc[t.cat] = (acc[t.cat] || 0) + t.amount; return acc; }, {needs:0, wants:0, save:0});
+            const totalE = expense || 1;
+            const p1 = (cats.needs/totalE)*100;
+            const p2 = p1 + (cats.wants/totalE)*100;
+
             const submit = () => {
                 if(!form.desc || !form.amount) return;
-                onAdd({ ...form, amount: parseFloat(form.amount) });
+                addTx({ ...form, amount: parseFloat(form.amount) });
                 setForm({ ...form, desc: '', amount: '' });
             };
 
             return (
-                <div className="ios-card space-y-3">
-                    <div className="flex gap-2 bg-gray-800 p-1 rounded-lg">
-                        <button onClick={() => setForm({...form, type: 'in'})} className={`flex-1 py-1 text-sm rounded-md ${form.type === 'in' ? 'bg-green-600 text-white' : 'text-gray-400'}`}>Ingreso</button>
-                        <button onClick={() => setForm({...form, type: 'out'})} className={`flex-1 py-1 text-sm rounded-md ${form.type === 'out' ? 'bg-red-600 text-white' : 'text-gray-400'}`}>Gasto</button>
-                    </div>
-                    <div className="flex gap-2">
-                        <input placeholder="Concepto" value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} className="ios-input flex-1" />
-                        <input type="number" placeholder="€" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className="ios-input w-24 text-center" />
-                    </div>
-                    {form.type === 'out' && (
-                        <div className="flex justify-between text-xs pt-1">
-                            {['needs', 'wants', 'save'].map(c => (
-                                <label key={c} className={`cursor-pointer px-3 py-1 rounded-full border ${form.cat === c ? 'border-primary bg-primary/20 text-white' : 'border-gray-700 text-gray-500'}`}>
-                                    <input type="radio" name="cat" className="hidden" onClick={() => setForm({...form, cat: c})} />
-                                    {c === 'needs' ? 'Necesidad' : c === 'wants' ? 'Capricho' : 'Ahorro'}
-                                </label>
-                            ))}
-                        </div>
-                    )}
-                    <button onClick={submit} className="w-full bg-white/10 hover:bg-white/20 py-3 rounded-xl text-sm font-bold mt-2">Registrar</button>
-                </div>
-            );
-        };
+                <div className="pb-32 max-w-2xl mx-auto min-h-screen">
+                    {/* NAV */}
+                    <nav className="p-6 flex justify-between items-center">
+                        <span className="text-xl font-bold tracking-tight">FamilyWealth</span>
+                        <button onClick={exportData} className="text-gray-400 hover:text-white p-2 bg-white/5 rounded-full" title="Exportar Backup"><Icon name="download-cloud" size={18}/></button>
+                    </nav>
 
-        const LoanSimulator = () => {
-            const [val, setVal] = useState(15000);
-            const [months, setMonths] = useState(24);
-            // Cálculo ING Directo
-            const r = (5.50 / 100) / 12;
-            const cuota = val * ((r * Math.pow(1+r, months)) / (Math.pow(1+r, months) - 1));
-
-            return (
-                <div className="ios-card bg-gray-900 border-orange-500/30 border">
-                    <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-orange-500 font-bold flex items-center gap-2"><Icon name="calculator" size={16} color="#F97316"/> Simulador</h3>
-                        <div className="text-right">
-                            <div className="text-2xl font-bold text-white">{cuota.toFixed(2)}€</div>
-                            <div className="text-[10px] text-gray-400">mensual</div>
+                    {/* BALANCE */}
+                    <div className="px-6 mb-8 text-center">
+                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Liquidez Disponible</p>
+                        <h1 className="text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-500">{balance.toFixed(2)}€</h1>
+                        <div className="flex justify-center gap-4 mt-4">
+                            <span className="badge bg-green-900/30 text-green-400 flex items-center gap-1"><Icon name="arrow-up" size={12}/> {income}€</span>
+                            <span className="badge bg-red-900/30 text-red-400 flex items-center gap-1"><Icon name="arrow-down" size={12}/> {expense}€</span>
                         </div>
                     </div>
-                    <input type="range" min="1000" max="50000" step="1000" value={val} onChange={e => setVal(Number(e.target.value))} className="w-full mb-2 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" />
-                    <div className="flex justify-between text-xs text-gray-500 mb-4">
-                        <span>{val}€</span>
-                        <span>Solicitado</span>
-                    </div>
-                    <input type="range" min="12" max="84" step="6" value={months} onChange={e => setMonths(Number(e.target.value))} className="w-full mb-2 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" />
-                    <div className="flex justify-between text-xs text-gray-500">
-                        <span>{months} meses</span>
-                        <span>Plazo</span>
+
+                    <div className="px-4">
+                        {/* INPUT RÁPIDO */}
+                        <div className="ios-card bg-gray-900/50 backdrop-blur-md">
+                            <div className="flex gap-2 mb-3">
+                                <button onClick={() => setForm({...form, type: 'in'})} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${form.type === 'in' ? 'bg-[#30D158] text-black' : 'bg-white/5 text-gray-400'}`}>INGRESO</button>
+                                <button onClick={() => setForm({...form, type: 'out'})} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${form.type === 'out' ? 'bg-[#FF453A] text-white' : 'bg-white/5 text-gray-400'}`}>GASTO</button>
+                            </div>
+                            <div className="flex gap-3 mb-3">
+                                <input placeholder="Concepto (ej: Luz)" value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} className="ios-input flex-1" />
+                                <input type="number" placeholder="0.00" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className="ios-input w-24 text-center" />
+                            </div>
+                            {form.type === 'out' && (
+                                <div className="flex justify-between gap-2 mb-3">
+                                    {['needs', 'wants', 'save'].map(c => (
+                                        <button key={c} onClick={() => setForm({...form, cat: c})} className={`flex-1 py-1 rounded-md text-[10px] uppercase font-bold border ${form.cat === c ? 'border-blue-500 text-blue-400 bg-blue-500/10' : 'border-white/10 text-gray-500'}`}>
+                                            {c === 'needs' ? 'Necesidad' : c === 'wants' ? 'Capricho' : 'Inversión'}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            <button onClick={submit} className="ios-btn w-full bg-white text-black hover:bg-gray-200">Añadir Movimiento</button>
+                        </div>
+
+                        {/* ANÁLISIS + METAS */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div className="ios-card flex flex-col items-center justify-center">
+                                <h3 className="text-xs uppercase font-bold text-gray-500 mb-4 w-full text-left">Distribución Gastos</h3>
+                                <div className="donut-chart" style={{'--p1': `${p1}%`, '--p2': `${p2}%`, '--p3': '100%'}}>
+                                    <div className="donut-hole">
+                                        <span className="text-2xl font-bold">{expense > 0 ? Math.round((cats.save/expense)*100) : 0}%</span>
+                                        <span className="text-[10px] text-gray-400">Tasa Ahorro</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* NUEVO: COMPONENTE METAS */}
+                            <Goals />
+                        </div>
+
+                        {/* NUEVO: SIMULADOR MANUAL */}
+                        <LoanSimulator />
+
+                        {/* LISTA MOVIMIENTOS */}
+                        <div className="ios-card">
+                            <h3 className="text-xs uppercase font-bold text-gray-500 mb-4">Historial Reciente</h3>
+                            <div className="space-y-4">
+                                {data.txs.slice(0, 10).map(t => (
+                                    <div key={t.id} className="flex justify-between items-center group">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${t.type === 'in' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                                <Icon name={t.type === 'in' ? 'trending-up' : 'credit-card'} size={18} />
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-sm">{t.desc}</p>
+                                                <p className="text-[10px] text-gray-500 uppercase">{t.cat || 'Ingreso'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <span className={`font-mono font-bold ${t.type === 'in' ? 'text-green-400' : 'text-white'}`}>
+                                                {t.type === 'in' ? '+' : '-'}{t.amount.toFixed(2)}€
+                                            </span>
+                                            <button onClick={() => delTx(t.id)} className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="trash" size={14}/></button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {data.txs.length === 0 && <div className="text-center text-gray-600 text-sm py-4">Sin datos. Empieza añadiendo un ingreso.</div>}
+                            </div>
+                        </div>
                     </div>
                 </div>
             );
-        };
-
-        // --- INICIAR APP ---
-        const App = () => {
-            const { user } = useContext(AppContext);
-            
-            // Eliminar pantalla de carga cuando React monta
-            useEffect(() => {
-                const loader = document.getElementById('loading-screen');
-                if(loader) loader.style.display = 'none';
-            }, []);
-
-            return user ? <Dashboard /> : <LoginScreen />;
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<AppProvider><App /></AppProvider>);
+        root.render(<AppProvider><Dashboard /></AppProvider>);
     </script>
 </body>
 </html>
